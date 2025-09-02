@@ -31,7 +31,7 @@
 }
 
 .progressContainer {
-  width: 100%;
+  width: 90%;
   margin: 10px 0 5px;
 }
 
@@ -78,7 +78,7 @@
 }
 
 .questionContainer {
-  width: 100%;
+  width: 90%;
   padding: 20px;
   color: white;
   background-color: #3d116a;
@@ -92,7 +92,7 @@
   flex-direction: column;
   align-items: center;
   gap: 12px;
-  width: 100%;
+  width: 80%;
   margin-bottom: 40px;
   padding: 0 10px;
 }
