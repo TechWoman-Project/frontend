@@ -3,81 +3,221 @@ import { useEffect, useState } from "react";
 import styles from "./quiz.module.css";
 import Footer from "@/components/Footer";
 
-interface AnswerOption {
-  id: string;
-  label: string;
-  text: string;
+interface QuizQuestion {
+  id: number;
+  question: string;
+  // answers list
+  options: string[];
+  // indice of correct answer (0-based)
+  correctIndex: number; // used to award points
+  points: number; // points for right answer
+  time?: number; // optional custom time for this question
 }
 
-const TOTAL_TIME = 60;
+const TOTAL_TIME = 60; // fallback total quiz time if per-question not specified
 
-const answers: AnswerOption[] = [
-  { id: "a", label: "A", text: "Answer 1" },
-  { id: "b", label: "B", text: "Answer 2" },
-  { id: "c", label: "C", text: "Answer 3" },
-  { id: "d", label: "D", text: "Answer 4" },
+// You can extend / fetch these later; indices provide the correctness info ("indice").
+const ANSWER_TIME = 100; // default time for answering questions
+const QUESTIONS: QuizQuestion[] = [
+  {
+    id: 1,
+    question:
+      "Lorsqu’on place un glaçon dans un verre d’eau, il flotte partiellement à la surface. On attend qu’il fonde complètement. Que se passe-t-il avec le niveau de l’eau dans le verre ?",
+    options: [
+      "Il monte",
+      "Il descend",
+      "Il reste le même",
+      "On ne peut pas savoir",
+    ],
+    correctIndex: 1,
+    points: 10,
+    time: ANSWER_TIME,
+  },
+  {
+    id: 2,
+    question:
+      "Quelle technologie est au coeur de l'entrainement des modèles IA de deep learning ?",
+    options: ["GPU", "Routeur", "Imprimante 3D", "Scanner"],
+    correctIndex: 0,
+    points: 10,
+    time: ANSWER_TIME,
+  },
+  {
+    id: 3,
+    question: "Quel protocole sécurise la communication web via chiffrement ?",
+    options: ["FTP", "HTTP", "TLS", "SMTP"],
+    correctIndex: 2,
+    points: 15,
+    time: ANSWER_TIME,
+  },
 ];
 
 export default function QuizPage() {
-  const [timeLeft, setTimeLeft] = useState(TOTAL_TIME);
-  const [selected, setSelected] = useState<string | null>(null);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+  const [score, setScore] = useState(0);
+  const [questionTimeLeft, setQuestionTimeLeft] = useState(
+    QUESTIONS[0].time ?? TOTAL_TIME
+  );
+  const [showResult, setShowResult] = useState(false);
+  const [locked, setLocked] = useState(false); // lock after selection until next
 
+  const currentQuestion = QUESTIONS[currentIndex];
+  const perQuestionTime = currentQuestion.time ?? TOTAL_TIME;
+
+  // Timer effect for per-question timer
   useEffect(() => {
-    if (timeLeft <= 0) return;
-    const id = setInterval(() => setTimeLeft((t) => t - 1), 1000);
+    if (showResult) return;
+    if (questionTimeLeft <= 0) {
+      handleNext(false); // treat as unanswered
+      return;
+    }
+    const id = setInterval(() => {
+      setQuestionTimeLeft((t) => t - 1);
+    }, 1000);
     return () => clearInterval(id);
-  }, [timeLeft]);
+  }, [questionTimeLeft, showResult]);
 
-  const progressPercent = ((TOTAL_TIME - timeLeft) / TOTAL_TIME) * 100;
+  // Progress now represents remaining time (decreasing from 100% to 0%)
+  const progressPercent = (questionTimeLeft / perQuestionTime) * 100;
+
+  const handleSelect = (idx: number) => {
+    if (locked) return;
+    setSelectedIndex(idx);
+    setLocked(true);
+    // award points if correct
+    if (idx === currentQuestion.correctIndex) {
+      setScore((s) => s + currentQuestion.points);
+    }
+    // brief delay before auto advance (slightly longer on last question so user sees result highlight)
+    const delay = currentIndex + 1 === QUESTIONS.length ? 1200 : 900;
+    setTimeout(() => handleNext(true), delay);
+  };
+
+  const handleNext = (wasInteraction: boolean) => {
+    setLocked(false);
+    setSelectedIndex(null);
+    if (currentIndex + 1 < QUESTIONS.length) {
+      const nextIndex = currentIndex + 1;
+      setCurrentIndex(nextIndex);
+      const nxt = QUESTIONS[nextIndex];
+      setQuestionTimeLeft(nxt.time ?? TOTAL_TIME);
+    } else {
+      setShowResult(true);
+    }
+  };
 
   return (
     <div className={styles.globalContainer}>
-      <header className={styles.logoHeader}>logo</header>
+      <header className={styles.logoHeader}>
+        <img
+          src="/assets/logo.png"
+          alt="Tech Women Logo"
+          className={styles.logo}
+        />
+      </header>
       <div className={styles.content}>
-        <div className={styles.progressContainer}>
-          <div className={styles.progressBorder}>
-            <div
-              className={styles.progressBar}
-              aria-label="Progress"
-              aria-valuemin={0}
-              aria-valuemax={100}
-              aria-valuenow={Math.round(progressPercent)}
-              role="progressbar"
-            >
-              <div
-                className={styles.progressFill}
-                style={{ width: `${progressPercent}%` }}
-              />
+        {!showResult && (
+          <>
+            <div className={styles.progressContainer}>
+              <div className={styles.progressBorder}>
+                <div
+                  className={styles.progressBar}
+                  aria-label="Progress"
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-valuenow={Math.round(progressPercent)}
+                  role="progressbar"
+                >
+                  <div
+                    className={styles.progressFill}
+                    style={{ width: `${progressPercent}%` }}
+                  />
+                </div>
+              </div>
+              <div className={styles.progressText}>
+                <img
+                  src="/assets/timer.png"
+                  alt="Timer"
+                  className={styles.timerIcon}
+                  aria-hidden
+                />{" "}
+                {questionTimeLeft}s
+              </div>
             </div>
-          </div>
-          <div className={styles.progressText}>
-            <i className="fa-regular fa-hourglass" aria-hidden /> {timeLeft}s
-          </div>
-        </div>
-        <div className={styles.questionContainer}>
-          Lorem ipsum dolor sit amet consectetur adipisicing elit. Id, a porro.
-          Alias dolorum nam obcaecati aperiam? Cumque, beatae iste suscipit
-          illum maxime sint nam obcaecati nihil ex consequatur, dolores vitae!
-        </div>
-        <div className={styles.answers}>
-          {answers.map((ans) => (
-            <div
-              key={ans.id}
-              className={`${styles.answerBox} ${
-                selected === ans.id ? styles.active : ""
-              }`}
-              onClick={() => setSelected(ans.id)}
-              role="button"
-              tabIndex={0}
-              onKeyDown={(e) =>
-                (e.key === "Enter" || e.key === " ") && setSelected(ans.id)
-              }
-              aria-pressed={selected === ans.id}
-            >
-              {ans.text}
+            {/* 
+            <div className={styles.metaRow}>
+              <span className={styles.metaBadge}>
+                Question {currentIndex + 1}/{QUESTIONS.length}
+              </span>
+              <span className={styles.metaBadge}>Score: {score}</span>
+              <span className={styles.metaBadge}>
+                +{currentQuestion.points} pts
+              </span>
             </div>
-          ))}
-        </div>
+             */}
+            <div className={styles.questionContainer}>
+              {currentQuestion.question}
+            </div>
+            <div className={styles.answers}>
+              {currentQuestion.options.map((text, idx) => {
+                const isSelected = selectedIndex === idx;
+                const isCorrect =
+                  locked && idx === currentQuestion.correctIndex;
+                const isWrong =
+                  locked && isSelected && idx !== currentQuestion.correctIndex;
+                return (
+                  <div
+                    key={idx}
+                    className={[
+                      styles.answerBox,
+                      isSelected ? styles.active : "",
+                      isCorrect ? styles.correct : "",
+                      isWrong ? styles.wrong : "",
+                    ].join(" ")}
+                    onClick={() => handleSelect(idx)}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) =>
+                      (e.key === "Enter" || e.key === " ") && handleSelect(idx)
+                    }
+                    aria-pressed={isSelected}
+                    aria-label={
+                      locked
+                        ? isCorrect
+                          ? `${text} (correct)`
+                          : isWrong
+                          ? `${text} (incorrect)`
+                          : text
+                        : text
+                    }
+                  >
+                    {text}
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        )}
+        {showResult && (
+          <div className={styles.resultBox}>
+            <h2>Résultat</h2>
+            <p>Votre score: {score} points</p>
+            <button
+              className={styles.restartBtn}
+              onClick={() => {
+                setCurrentIndex(0);
+                setScore(0);
+                setSelectedIndex(null);
+                setShowResult(false);
+                setQuestionTimeLeft(QUESTIONS[0].time ?? TOTAL_TIME);
+                setLocked(false);
+              }}
+            >
+              Recommencer
+            </button>
+          </div>
+        )}
       </div>
       <Footer />
     </div>
