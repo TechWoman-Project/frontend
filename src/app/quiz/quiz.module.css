@@ -41,7 +41,7 @@
 }
 
 .progressBorder {
-  border: 1px solid purple;
+  border: 1px solid #3d116a;
   border-radius: 20px;
   overflow: hidden;
   padding: 7px;
