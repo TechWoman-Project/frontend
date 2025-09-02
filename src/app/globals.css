@@ -17,7 +17,7 @@ html, body {
   justify-content: space-between;
   gap: 20px;
   background: transparent;
-  color: white;
+  color: white !important;
   font-size: 0.8rem;
   font-family: "Gill Sans", "Gill Sans MT", Calibri, "Trebuchet MS", sans-serif;
 }
@@ -27,18 +27,13 @@ html, body {
 }
 .quiz-footer .social-media i {
   font-size: 25px;
-  color: white;
+  color: white !important;
+  transition: opacity 0.3s ease;
+}
+.quiz-footer .social-media i:hover {
+  opacity: 0.8;
 }
 .quiz-footer p {
   margin: 0;
 }
 
-/* Dark text contrast fallback when background is light */
-@media (prefers-color-scheme: light) {
-  .quiz-footer {
-    color: #222;
-  }
-  .quiz-footer .social-media i {
-    color: #222;
-  }
-}
