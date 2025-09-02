@@ -45,11 +45,11 @@
   border-radius: 20px;
   overflow: hidden;
   padding: 7px;
-  background: rgba(255, 255, 255, 0.5);
+  background-color: transparent;  
 }
 
 .progressBar {
-  background-color: #e0e0e0;
+  background-color: white;
   border-radius: 20px;
   height: 10px;
   width: 100%;
@@ -58,7 +58,7 @@
 }
 
 .progressFill {
-  background-color: purple;
+  background-color: #3d116a;
   height: 100%;
   width: 0%;
   border-radius: 20px;
