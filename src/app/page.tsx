@@ -1,5 +1,5 @@
 import Footer from "@/components/Footer";
-import QuizPage from "@/app/quiz/quizPage";
+import QuizPage from "./quiz/quizPage";
 export default function Home() {
   return (
     <>
