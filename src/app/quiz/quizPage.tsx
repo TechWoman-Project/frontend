@@ -13,6 +13,15 @@ interface QuizQuestion {
   time?: number; // optional custom time for this question
 }
 
+interface UserResult {
+  id: string;
+  name: string;
+  score: number;
+  totalQuestions: number;
+  completedAt: string;
+  timeSpent: number;
+}
+
 const TOTAL_TIME = 60; // fallback total quiz time if per-question not specified
 
 // You can extend / fetch these later; indices provide the correctness info ("indice").
@@ -52,6 +61,8 @@ const QUESTIONS: QuizQuestion[] = [
 ];
 
 export default function QuizPage() {
+  const [userName, setUserName] = useState("");
+  const [gameStarted, setGameStarted] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [score, setScore] = useState(0);
@@ -60,13 +71,14 @@ export default function QuizPage() {
   );
   const [showResult, setShowResult] = useState(false);
   const [locked, setLocked] = useState(false); // lock after selection until next
+  const [quizStartTime, setQuizStartTime] = useState<Date | null>(null);
 
   const currentQuestion = QUESTIONS[currentIndex];
   const perQuestionTime = currentQuestion.time ?? TOTAL_TIME;
 
   // Timer effect for per-question timer
   useEffect(() => {
-    if (showResult) return;
+    if (showResult || !gameStarted) return;
     if (questionTimeLeft <= 0) {
       handleNext(false); // treat as unanswered
       return;
@@ -75,7 +87,7 @@ export default function QuizPage() {
       setQuestionTimeLeft((t) => t - 1);
     }, 1000);
     return () => clearInterval(id);
-  }, [questionTimeLeft, showResult]);
+  }, [questionTimeLeft, showResult, gameStarted]);
 
   // Progress now represents remaining time (decreasing from 100% to 0%)
   const progressPercent = (questionTimeLeft / perQuestionTime) * 100;
@@ -93,6 +105,34 @@ export default function QuizPage() {
     setTimeout(() => handleNext(true), delay);
   };
 
+  const startQuiz = () => {
+    if (userName.trim().length < 2) {
+      alert("Please enter your name (at least 2 characters)");
+      return;
+    }
+    setGameStarted(true);
+    setQuizStartTime(new Date());
+  };
+
+  const saveResult = () => {
+    if (!quizStartTime) return;
+    
+    const endTime = new Date();
+    const timeSpent = Math.floor((endTime.getTime() - quizStartTime.getTime()) / 1000);
+    
+    const result: UserResult = {
+      id: Date.now().toString(),
+      name: userName.trim(),
+      score: score,
+      totalQuestions: QUESTIONS.length,
+      completedAt: endTime.toISOString(),
+      timeSpent: timeSpent
+    };
+    
+    // Save to localStorage
+    localStorage.setItem(`quiz_result_${result.id}`, JSON.stringify(result));
+  };
+
   const handleNext = (wasInteraction: boolean) => {
     setLocked(false);
     setSelectedIndex(null);
@@ -103,6 +143,7 @@ export default function QuizPage() {
       setQuestionTimeLeft(nxt.time ?? TOTAL_TIME);
     } else {
       setShowResult(true);
+      saveResult();
     }
   };
 
@@ -116,7 +157,45 @@ export default function QuizPage() {
         />
       </header>
       <div className={styles.content}>
-        {!showResult && (
+        {/* Name Input Screen */}
+        {!gameStarted && (
+          <div className={styles.nameInputContainer}>
+            <h2 className={styles.welcomeTitle}>Welcome to TechWoman Quiz! 🚀</h2>
+            <p className={styles.welcomeDescription}>
+              Test your knowledge and compete with your friends!
+            </p>
+            <div className={styles.nameInputSection}>
+              <label htmlFor="userName" className={styles.nameLabel}>
+                Enter your name:
+              </label>
+              <input
+                id="userName"
+                type="text"
+                value={userName}
+                onChange={(e) => setUserName(e.target.value)}
+                placeholder="Your name here..."
+                className={styles.nameInput}
+                maxLength={30}
+                onKeyDown={(e) => e.key === 'Enter' && startQuiz()}
+              />
+              <button
+                onClick={startQuiz}
+                className={styles.startButton}
+                disabled={userName.trim().length < 2}
+              >
+                Start Quiz 🎯
+              </button>
+            </div>
+            <div className={styles.quizInfo}>
+              <p>📝 {QUESTIONS.length} Questions</p>
+              <p>⏱️ {ANSWER_TIME} seconds per question</p>
+              <p>🏆 Compete for the highest score!</p>
+            </div>
+          </div>
+        )}
+
+        {/* Quiz Content */}
+        {gameStarted && !showResult && (
           <>
             <div className={styles.progressContainer}>
               <div className={styles.progressBorder}>
@@ -140,31 +219,17 @@ export default function QuizPage() {
                   alt="Timer"
                   className={styles.timerIcon}
                   aria-hidden
-                />{" "}
-                {questionTimeLeft}s
+                /> {questionTimeLeft}s
               </div>
             </div>
-            {/* 
-            <div className={styles.metaRow}>
-              <span className={styles.metaBadge}>
-                Question {currentIndex + 1}/{QUESTIONS.length}
-              </span>
-              <span className={styles.metaBadge}>Score: {score}</span>
-              <span className={styles.metaBadge}>
-                +{currentQuestion.points} pts
-              </span>
-            </div>
-             */}
             <div className={styles.questionContainer}>
               {currentQuestion.question}
             </div>
             <div className={styles.answers}>
               {currentQuestion.options.map((text, idx) => {
                 const isSelected = selectedIndex === idx;
-                const isCorrect =
-                  locked && idx === currentQuestion.correctIndex;
-                const isWrong =
-                  locked && isSelected && idx !== currentQuestion.correctIndex;
+                const isCorrect = locked && idx === currentQuestion.correctIndex;
+                const isWrong = locked && isSelected && idx !== currentQuestion.correctIndex;
                 return (
                   <div
                     key={idx}
@@ -177,17 +242,15 @@ export default function QuizPage() {
                     onClick={() => handleSelect(idx)}
                     role="button"
                     tabIndex={0}
-                    onKeyDown={(e) =>
-                      (e.key === "Enter" || e.key === " ") && handleSelect(idx)
-                    }
+                    onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && handleSelect(idx)}
                     aria-pressed={isSelected}
                     aria-label={
                       locked
                         ? isCorrect
                           ? `${text} (correct)`
                           : isWrong
-                          ? `${text} (incorrect)`
-                          : text
+                            ? `${text} (incorrect)`
+                            : text
                         : text
                     }
                   >
@@ -198,26 +261,40 @@ export default function QuizPage() {
             </div>
           </>
         )}
+
+        {/* Results Screen */}
         {showResult && (
           <div className={styles.resultBox}>
-            <h2>Résultat</h2>
-            <p>Votre score: {score} points</p>
-            <button
-              className={styles.restartBtn}
-              onClick={() => {
-                setCurrentIndex(0);
-                setScore(0);
-                setSelectedIndex(null);
-                setShowResult(false);
-                setQuestionTimeLeft(QUESTIONS[0].time ?? TOTAL_TIME);
-                setLocked(false);
-              }}
-            >
-              Recommencer
-            </button>
+            <h2>🎉 Quiz Completed!</h2>
+            <div className={styles.playerResult}>
+              <p className={styles.playerName}>👤 {userName}</p>
+              <p className={styles.finalScore}>Your score: {score} points</p>
+              <p className={styles.maxScore}>Out of {QUESTIONS.length * 10} possible points</p>
+            </div>
+            <div className={styles.resultActions}>
+              <button
+                className={styles.restartBtn}
+                onClick={() => {
+                  setCurrentIndex(0);
+                  setScore(0);
+                  setSelectedIndex(null);
+                  setShowResult(false);
+                  setGameStarted(false);
+                  setUserName("");
+                  setQuestionTimeLeft(QUESTIONS[0].time ?? TOTAL_TIME);
+                  setLocked(false);
+                  setQuizStartTime(null);
+                }}
+              >
+                🔄 Play Again
+              </button>
+              <a href="/result" className={styles.adminBtn}>
+                📊 View All Results
+              </a>
+            </div>
           </div>
         )}
-      </div>      
+      </div>
     </div>
   );
 }
