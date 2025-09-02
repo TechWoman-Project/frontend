@@ -1,7 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
 import styles from "./quiz.module.css";
-import Footer from "@/components/Footer";
 
 interface QuizQuestion {
   id: number;
@@ -218,8 +217,7 @@ export default function QuizPage() {
             </button>
           </div>
         )}
-      </div>
-      <Footer />
+      </div>      
     </div>
   );
 }
