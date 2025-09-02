@@ -45,7 +45,7 @@
   border-radius: 20px;
   overflow: hidden;
   padding: 7px;
-  background-color: transparent;  
+  background-color: transparent;
 }
 
 .progressBar {
@@ -58,7 +58,7 @@
 }
 
 .progressFill {
-  background-color: #3d116a;
+  background-color: #781ad8;
   height: 100%;
   width: 0%;
   border-radius: 20px;
@@ -72,7 +72,7 @@
 
 .progressText {
   text-align: center;
-  margin-top: 6px;
+  margin-top: 15px;
   font-size: 14px;
   font-weight: 600;
   display: flex;
