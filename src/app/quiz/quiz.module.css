@@ -1,6 +1,6 @@
 .globalContainer {
   margin: 0 auto;
-  height: 100vh;
+  height: 100dvh;
   padding: 35px;
   background-color: #d4c9f8;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
