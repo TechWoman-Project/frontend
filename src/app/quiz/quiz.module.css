@@ -215,7 +215,7 @@
 
 @media (max-width: 640px) {
   .globalContainer {
-    padding: 16px 12px 10px 12px;
+    padding: 16px 12px 60px 12px;
     height: 100dvh;
     max-height: 100dvh;
     overflow: hidden;
@@ -227,6 +227,7 @@
     bottom: 0;
     overscroll-behavior: none;
     -webkit-overflow-scrolling: touch;
+    z-index: 1;
   }
 
   .logo {
@@ -239,10 +240,11 @@
 
   .content {
     gap: 12px;
-    max-height: calc(100dvh - 100px);
+    max-height: calc(100dvh - 140px);
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
     overscroll-behavior: contain;
+    padding-bottom: 10px;
   }
 
   .questionContainer {
@@ -277,7 +279,7 @@
 
 @media (max-width: 390px) {
   .globalContainer {
-    padding: 12px 8px 10px 8px;
+    padding: 12px 8px 60px 8px;
     height: 100dvh;
     max-height: 100dvh;
     overflow: hidden;
@@ -288,14 +290,16 @@
     right: 0;
     bottom: 0;
     overscroll-behavior: none;
+    z-index: 1;
   }
 
   .content {
-    max-height: calc(100dvh - 90px);
+    max-height: calc(100dvh - 130px);
     overflow-y: auto;
     gap: 10px;
     -webkit-overflow-scrolling: touch;
     overscroll-behavior: contain;
+    padding-bottom: 10px;
   }
 
   .answerBox {
