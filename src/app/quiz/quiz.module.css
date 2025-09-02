@@ -10,6 +10,10 @@
   align-items: center;
   position: relative;
   overflow: hidden;
+  /* iOS specific scroll prevention */
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: none;
+  touch-action: pan-y pinch-zoom;
 }
 
 .logoHeader {
@@ -215,6 +219,14 @@
     height: 100dvh;
     max-height: 100dvh;
     overflow: hidden;
+    /* Enhanced iOS scroll prevention */
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    overscroll-behavior: none;
+    -webkit-overflow-scrolling: touch;
   }
 
   .logo {
@@ -230,6 +242,7 @@
     max-height: calc(100dvh - 100px);
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
   }
 
   .questionContainer {
@@ -268,12 +281,21 @@
     height: 100dvh;
     max-height: 100dvh;
     overflow: hidden;
+    /* Enhanced iOS scroll prevention for smaller devices */
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    overscroll-behavior: none;
   }
 
   .content {
     max-height: calc(100dvh - 90px);
     overflow-y: auto;
     gap: 10px;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
   }
 
   .answerBox {
