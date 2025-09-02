@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import styles from "./quiz.module.css";
 
 interface QuizQuestion {
@@ -288,9 +289,9 @@ export default function QuizPage() {
               >
                 🔄 Play Again
               </button>
-              <a href="/result" className={styles.adminBtn}>
+              <Link href="/result" className={styles.adminBtn}>
                 📊 View All Results
-              </a>
+              </Link>
             </div>
           </div>
         )}

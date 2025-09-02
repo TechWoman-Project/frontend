@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import styles from "./result.module.css";
 
 interface UserResult {
@@ -192,9 +193,9 @@ export default function AdminResultsPage() {
       )}
 
       <div className={styles.backToQuiz}>
-        <a href="/" className={styles.backButton}>
+        <Link href="/" className={styles.backButton}>
           ← Back to Quiz
-        </a>
+        </Link>
       </div>
     </div>
   );
