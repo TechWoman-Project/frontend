@@ -1,6 +1,5 @@
 "use client";
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import styles from "./quiz.module.css";
 import Logo from "@/components/Logo";
 

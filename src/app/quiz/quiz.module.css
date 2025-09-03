@@ -172,11 +172,11 @@
 }
 .nextBtn,
 .restartBtn {
-  background: linear-gradient(135deg, #9333ea, #7e22ce);
+  background: #3d116a;
   color: #fff;
   padding: 10px 20px;
   border: none;
-  border-radius: 8px;
+  border-radius: 7px;
   font-weight: 600;
   cursor: pointer;
   transition: filter 0.2s, transform 0.15s;

@@ -1,10 +1,11 @@
 import Footer from "@/components/Footer";
-import QuizPage from "./quiz/quizPage";
+import StartQuizzPage from "./quiz/startQuiz";
+
 export default function Home() {
   return (
     <>
-      <QuizPage />
-      <Footer />
+      <StartQuizzPage />
+      {/* <Footer /> */}
     </>
   );
 }
