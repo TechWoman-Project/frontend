@@ -130,7 +130,13 @@ export default function QuizPage() {
                 </div>
               </div>
               <div className={styles.progressText}>
-                
+                <img
+                  src="/assets/timer.png"
+                  alt="Timer"
+                  className={styles.timerIcon}
+                  aria-hidden
+                />{" "}
+                {questionTimeLeft}s
               </div>
             </div>
             {/* 
@@ -189,7 +195,6 @@ export default function QuizPage() {
         )}
         {showResult && (
           <div className={styles.resultBox}>
-
             <h2>Résultat</h2>
             <p>Votre score: {score} points</p>
             <button
@@ -207,7 +212,7 @@ export default function QuizPage() {
             </button>
           </div>
         )}
-      </div>      
+      </div>
     </div>
   );
 }
