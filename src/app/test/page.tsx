@@ -1,6 +1,6 @@
 "use client";
-import { useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase';
+import { useEffect, useState } from "react";
+import { supabase } from "@/lib/supabase";
 
 interface ConnectionStatus {
   isConnected: boolean;
@@ -11,66 +11,73 @@ interface ConnectionStatus {
 }
 
 export default function TestPage() {
-  const [status, setStatus] = useState<ConnectionStatus>({ isConnected: false });
+  const [status, setStatus] = useState<ConnectionStatus>({
+    isConnected: false,
+  });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const testConnection = async () => {
       try {
         setLoading(true);
-        
-        console.log('Testing Supabase connection...');
-        console.log('URL:', process.env.NEXT_PUBLIC_SUPABASE_URL);
-        console.log('Key exists:', !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+
+        console.log("Testing Supabase connection...");
+        console.log("URL:", process.env.NEXT_PUBLIC_SUPABASE_URL);
+        console.log("Key exists:", !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
 
         // First check if environment variables are available
-        if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-          throw new Error('Supabase environment variables are not configured properly');
+        if (
+          !process.env.NEXT_PUBLIC_SUPABASE_URL ||
+          !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+        ) {
+          throw new Error(
+            "Supabase environment variables are not configured properly"
+          );
         }
 
         // Test the most basic operation - check if we can make any request
-        console.log('Attempting to test connection...');
-        
+        console.log("Attempting to test connection...");
+
         // Try to get session (this should work even without tables)
-        const { data: session, error: sessionError } = await supabase.auth.getSession();
-        
+        const { data: session, error: sessionError } =
+          await supabase.auth.getSession();
+
         if (sessionError) {
-          console.error('Session error:', sessionError);
+          console.error("Session error:", sessionError);
           throw sessionError;
         }
 
-        console.log('Session check successful:', session);
+        console.log("Session check successful:", session);
 
         setStatus({
           isConnected: true,
           timestamp: new Date().toISOString(),
-          version: 'Connection successful - Auth working',
-          debugInfo: { session: !!session }
+          version: "Connection successful - Auth working",
+          debugInfo: { session: !!session },
         });
-
       } catch (error: unknown) {
-        console.error('Supabase connection error:', error);
-        
-        let errorMessage = 'Failed to connect to Supabase';
+        console.error("Supabase connection error:", error);
+
+        let errorMessage = "Failed to connect to Supabase";
         let debugInfo = {};
-        
+
         if (error instanceof Error) {
           errorMessage = error.message;
-          debugInfo = { 
-            name: error.name, 
+          debugInfo = {
+            name: error.name,
             message: error.message,
-            stack: error.stack?.split('\n').slice(0, 3)
+            stack: error.stack?.split("\n").slice(0, 3),
           };
-        } else if (typeof error === 'object' && error !== null) {
+        } else if (typeof error === "object" && error !== null) {
           errorMessage = JSON.stringify(error);
           debugInfo = error;
         }
-        
+
         setStatus({
           isConnected: false,
           error: errorMessage,
           timestamp: new Date().toISOString(),
-          debugInfo
+          debugInfo,
         });
       } finally {
         setLoading(false);
