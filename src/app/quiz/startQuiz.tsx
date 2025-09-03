@@ -2,7 +2,7 @@
 import Link from "next/link";
 import Logo from "@/components/Logo";
 import quizStyles from "@/app/quiz/quiz.module.css";
-import startQuizStyles from "@/app/quiz/startQuiz.module.css";
+import Footer from "@/components/Footer";
 
 // Start quiz landing page replicating structure from startQuizz.html
 // Reuses styling from quiz.module.css to stay visually consistent.
@@ -10,13 +10,15 @@ import startQuizStyles from "@/app/quiz/startQuiz.module.css";
 export default function StartQuizzPage() {
   return (
     <div className={quizStyles.globalContainer}>
-      <div className={quizStyles.content} style={{ justifyContent: "space-between" }}>
+      <div
+        className={quizStyles.content}
+        style={{ justifyContent: "space-between" }}
+      >
         <Logo />
         <div style={{ textAlign: "center" }}>
-          <img 
-            src="/assets/quizTime.png" 
-            alt="Quiz Time" 
-            className={startQuizStyles.quizTimeImage}
+          <img
+            src="/assets/quizTime.png"
+            alt="Quiz Time"
             width={300}
             height={200}
           />
@@ -40,6 +42,7 @@ export default function StartQuizzPage() {
           </div>
         </div>
       </div>
+      <Footer />
     </div>
   );
 }

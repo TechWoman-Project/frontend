@@ -12,8 +12,221 @@ body {
   user-select: none;
   -webkit-touch-callout: none;
 }
+/* -------------------------------------------------- */
+/* Home Landing Page Styles (namespaced with tw-)     */
+/* -------------------------------------------------- */
+.tw-globalContainer {
+  margin: 0 auto;
+  min-height: 100dvh;
+  padding: 20px 16px 60px; /* leave room for sticky footer */
+  background-color: #d4c9f8;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  overflow-x: hidden;
+  font-family: "Inter", system-ui, sans-serif;
+}
+.tw-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 32px;
+  /* flex-wrap: wrap; */
+  width: 100%;
+  max-width: 1080px;
+}
+.tw-logo {
+  width: clamp(140px, 30vw, 230px);
+  height: auto;
+}
+.tw-slogan {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.tw-slogan h2 {
+  /* margin-top: 40px; */
+  font-size: clamp(1.8rem, 4vw, 2.4rem);
+  line-height: 1.1;
+}
+.tw-slogan p {
+  font-size: clamp(0.8rem, 2.2vw, 1rem);
+  line-height: 1.35;
+  max-width: 80%;
+  text-align: start;
+}
+
+/* Slider */
+.tw-slider-wrapper {
+  margin-top: 32px;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+.tw-slider-container {
+  width: 100%;
+  max-width: 500px;
+  position: relative;
+  overflow: hidden;
+}
+.tw-slider-track {
+  display: flex;
+  transition: transform 0.5s ease-in-out;
+}
+.tw-slide {
+  min-width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.tw-slide-img {
+  width: 100%;
+  height: auto;
+  border-radius: 12px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25);
+}
+.tw-slider-dots {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 15px;
+}
+.tw-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: none;
+  background: #888;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+.tw-dot.active {
+  background: #333;
+}
+
+/* Sections */
+.tw-section {
+  width: 100%;
+  max-width: 1080px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 25px 0;
+}
+.tw-section h2 {
+  font-size: clamp(1.4rem, 3.5vw, 2rem);
+  text-align: center;
+  font-weight: bold;
+}
+.tw-section p {
+  text-align: center;
+  font-size: clamp(0.85rem, 2vw, 1rem);
+  line-height: 1.5;
+}
+
+/* Video placeholder */
+.tw-video-placeholder {
+  width: 100%;
+  max-width: 1080px;
+  height: 200px;
+  background: #fff;
+  border-radius: 15px;
+  margin: 10px 0 30px;
+}
+
+/* Buttons */
+.tw-buttons-center {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  margin: 10px 0 30px;
+}
+.tw-buttons-dual {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  justify-content: center;
+  width: 100%;
+  margin: 30px 0;
+}
+.tw-btn-primary,
+.tw-btn-secondary {
+  background: #6c63ff;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 22px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.95rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transition: background 0.3s, transform 0.2s;
+}
+.tw-btn-secondary {
+  background: #584fe0;
+}
+.tw-btn-primary:hover,
+.tw-btn-secondary:hover {
+  background: #5a52e0;
+}
+.tw-btn-primary:active,
+.tw-btn-secondary:active {
+  transform: translateY(2px);
+}
+
+/* Sponsors */
+.tw-sponsors-grid {
+  width: 100%;
+  max-width: 1080px;
+  display: grid;
+  grid-template-columns: repeat(3, auto);
+  gap: 30px;
+}
+.tw-sponsor {
+  height: 100px;
+  background: #fff;
+  border-radius: 15px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+}
+
+/* Responsive */
+@media (max-width: 860px) {
+  .tw-globalContainer {
+    padding: 18px 14px 70px;
+  }
+  .tw-section {
+    padding: 20px 0;
+  }
+}
+@media (max-width: 640px) {
+  .tw-header {
+    /* flex-direction: column-reverse; */
+    text-align: center;
+    gap: 18px;
+  }
+  .tw-slogan {
+    gap: 12px;
+  }
+  .tw-slogan h2 {
+    /* margin-top: 10px; */
+    font-weight: bold;
+    text-align: start;
+  }
+  .tw-slider-container {
+    max-width: 92vw;
+  }
+  .tw-section p {
+    font-size: 0.95rem;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tw-slider-track {
+    transition: none;
+  }
+}
 .quiz-footer {
-  position: sticky;
+  position: absolute;
   bottom: 0;
   left: 0;
   right: 0;

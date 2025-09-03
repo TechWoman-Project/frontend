@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import styles from "./quiz.module.css";
 import Logo from "@/components/Logo";
+import Footer from "@/components/Footer";
 
 interface QuizQuestion {
   id: number;
@@ -213,6 +214,7 @@ export default function QuizPage() {
           </div>
         )}
       </div>
+      <Footer /> 
     </div>
   );
 }
