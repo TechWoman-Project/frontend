@@ -69,8 +69,8 @@ body {
   max-width: 500px;
   position: relative;
   overflow: hidden;
-  border-radius: 15px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3), 0 4px 16px rgba(0, 0, 0, 0.2);
+  border-radius: 20px;  
+  /* box-shadow: 0 8px 32px rgba(0, 0, 0, 1), 0 4px 16px rgba(0, 0, 0, 0.2); */
 }
 .tw-slider-track {
   display: flex;
@@ -78,6 +78,7 @@ body {
 }
 .tw-slide {
   min-width: 100%;
+  height: fit-content;
   display: flex;
   justify-content: center;
   align-items: center;
