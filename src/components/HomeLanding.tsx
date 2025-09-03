@@ -17,22 +17,13 @@ export default function HomeLanding() {
   useEffect(() => {
     const track = trackRef.current;
     if (!track) return;
-    const dots = Array.from(
-      document.querySelectorAll<HTMLButtonElement>("[data-dot]")
-    );
-    function update(i: number) {
-      const t = trackRef.current;
-      if (!t) return;
-      setIndex(i);
-      t.style.transform = `translateX(-${i * 100}%)`;
-      dots.forEach((d) => d.classList.remove("active"));
-      dots[i]?.classList.add("active");
-    }
-    dots.forEach((d) =>
-      d.addEventListener("click", () => update(Number(d.dataset.dot)))
-    );
+
     const interval = setInterval(() => {
-      update((indexRef.current + 1) % slides.length);
+      const nextIndex = (indexRef.current + 1) % slides.length;
+      setIndex(nextIndex);
+      if (track) {
+        track.style.transform = `translateX(-${nextIndex * 100}%)`;
+      }
     }, 4000);
     return () => clearInterval(interval);
   }, [slides.length]);
@@ -59,16 +50,6 @@ export default function HomeLanding() {
                   priority={i === 0}
                 />
               </div>
-            ))}
-          </div>
-          <div className="tw-slider-dots" role="tablist">
-            {slides.map((_, i) => (
-              <button
-                key={i}
-                data-dot={i}
-                className={`tw-dot ${i === index ? "active" : ""}`}
-                aria-label={`Aller à la diapositive ${i + 1}`}
-              />
             ))}
           </div>
         </div>
