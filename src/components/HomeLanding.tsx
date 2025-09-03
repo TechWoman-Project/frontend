@@ -95,7 +95,7 @@ export default function HomeLanding() {
       </section>
 
       <div className="tw-buttons-dual">
-        <Link href="/start-quiz" className="tw-btn-primary" role="button">
+        <Link href="/quiz" className="tw-btn-primary" role="button">
           Participer au Quiz
         </Link>
         <Link href="/start-quiz" className="tw-btn-secondary" role="button">
