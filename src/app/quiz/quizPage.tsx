@@ -2,6 +2,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import styles from "./quiz.module.css";
+import Logo from "@/components/Logo";
 
 interface QuizQuestion {
   id: number;
@@ -109,13 +110,7 @@ export default function QuizPage() {
 
   return (
     <div className={styles.globalContainer}>
-      <header className={styles.logoHeader}>
-        <img
-          src="/assets/logo.png"
-          alt="Tech Women Logo"
-          className={styles.logo}
-        />
-      </header>
+      <Logo />
       <div className={styles.content}>
         {!showResult && (
           <>
@@ -136,13 +131,7 @@ export default function QuizPage() {
                 </div>
               </div>
               <div className={styles.progressText}>
-                <img
-                  src="/assets/timer.png"
-                  alt="Timer"
-                  className={styles.timerIcon}
-                  aria-hidden
-                />{" "}
-                {questionTimeLeft}s
+                
               </div>
             </div>
             {/* 
