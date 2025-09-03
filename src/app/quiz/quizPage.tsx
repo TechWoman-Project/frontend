@@ -1,112 +1,192 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import styles from "./quiz.module.css";
 import Logo from "@/components/Logo";
 import Footer from "@/components/Footer";
+import { supabase } from "@/lib/supabase";
 
 interface QuizQuestion {
-  id: number;
+  id: number; // sequential for UI order
+  quizId: string; // real Supabase quiz UUID
   question: string;
-  // answers list
-  options: string[];
-  // indice of correct answer (0-based)
-  correctIndex: number; // used to award points
+  options: string[]; // answers list
+  correctIndex: number; // 0-based index of correct answer
   points: number; // points for right answer
-  time?: number; // optional custom time for this question
+  time?: number; // optional per-question time
 }
 
 const TOTAL_TIME = 60; // fallback total quiz time if per-question not specified
+const ANSWER_TIME = 100; // keep original visual timing unless changed per question
+const POINTS_PER_QUESTION = 10; // fixed score per correct answer
 
-// You can extend / fetch these later; indices provide the correctness info ("indice").
-const ANSWER_TIME = 100; // default time for answering questions
-const QUESTIONS: QuizQuestion[] = [
-  {
-    id: 1,
-    question:
-      "Lorsqu’on place un glaçon dans un verre d’eau, il flotte partiellement à la surface. On attend qu’il fonde complètement. Que se passe-t-il avec le niveau de l’eau dans le verre ?",
-    options: [
-      "Il monte",
-      "Il descend",
-      "Il reste le même",
-      "On ne peut pas savoir",
-    ],
-    correctIndex: 1,
-    points: 10,
-    time: ANSWER_TIME,
-  },
-  {
-    id: 2,
-    question:
-      "Quelle technologie est au coeur de l'entrainement des modèles IA de deep learning ?",
-    options: ["GPU", "Routeur", "Imprimante 3D", "Scanner"],
-    correctIndex: 0,
-    points: 10,
-    time: ANSWER_TIME,
-  },
-  {
-    id: 3,
-    question: "Quel protocole sécurise la communication web via chiffrement ?",
-    options: ["FTP", "HTTP", "TLS", "SMTP"],
-    correctIndex: 2,
-    points: 15,
-    time: ANSWER_TIME,
-  },
-];
+// NOTE: We remove mock data and will populate dynamically from Supabase while
+// keeping the exact same UI/UX structure below.
 
 export default function QuizPage() {
+  // Dynamic questions state replaces static QUESTIONS constant
+  const [QUESTIONS, setQuestions] = useState<QuizQuestion[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
+  const [userName, setUserName] = useState<string | null>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [score, setScore] = useState(0);
-  const [questionTimeLeft, setQuestionTimeLeft] = useState(
-    QUESTIONS[0].time ?? TOTAL_TIME
-  );
+  const [questionTimeLeft, setQuestionTimeLeft] = useState(TOTAL_TIME);
   const [showResult, setShowResult] = useState(false);
   const [locked, setLocked] = useState(false); // lock after selection until next
 
-  const currentQuestion = QUESTIONS[currentIndex];
-  const perQuestionTime = currentQuestion.time ?? TOTAL_TIME;
+  // Fetch active quizzes + options and build QUESTIONS list preserving UI contract
+  const fetchQuestions = useCallback(async () => {
+    try {
+      setLoading(true);
+      setFetchError(null);
+      const { data: quizzes, error: qErr } = await supabase
+        .from("quizzes")
+        .select("id, question, status, starts_at, ends_at, created_at")
+        .eq("status", "active")
+        .order("created_at", { ascending: true });
+      if (qErr) throw qErr;
+      const built: QuizQuestion[] = [];
+      if (quizzes && quizzes.length) {
+        for (let i = 0; i < quizzes.length; i++) {
+          const quiz = quizzes[i];
+          const { data: opts, error: oErr } = await supabase
+            .from("options")
+            .select("text,is_correct,order_index")
+            .eq("quiz_id", quiz.id)
+            .order("order_index", { ascending: true });
+          if (oErr) throw oErr;
+          if (!opts || opts.length < 2) continue; // need at least 2 options
+          const correctIndex = Math.max(
+            0,
+            opts.findIndex((o) => o.is_correct)
+          );
+          built.push({
+            id: built.length + 1, // sequential id for UI
+            quizId: quiz.id,
+            question: quiz.question,
+            options: opts.map((o) => o.text),
+            correctIndex: correctIndex >= 0 ? correctIndex : 0,
+            points: POINTS_PER_QUESTION,
+            time: ANSWER_TIME,
+          });
+        }
+      }
+      setQuestions(built);
+      // Reset progression if data set changed
+      setCurrentIndex(0);
+      setSelectedIndex(null);
+      setShowResult(false);
+      setLocked(false);
+      setScore(0);
+      setQuestionTimeLeft(built[0]?.time ?? TOTAL_TIME);
+    } catch (e) {
+      console.error("Failed to fetch quizzes", e);
+      setFetchError("Impossible de charger les quiz.");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-  // Timer effect for per-question timer
+  // Initial load + username restore
   useEffect(() => {
-    if (showResult) return;
-    if (questionTimeLeft <= 0) {
-      handleNext(false); // treat as unanswered
-      return;
-    }
-    const id = setInterval(() => {
-      setQuestionTimeLeft((t) => t - 1);
-    }, 1000);
-    return () => clearInterval(id);
-  }, [questionTimeLeft, showResult]);
+    const stored = localStorage.getItem("quiz_username");
+    if (stored) setUserName(stored);
+    fetchQuestions();
+  }, [fetchQuestions]);
 
-  // Progress now represents remaining time (decreasing from 100% to 0%)
-  const progressPercent = (questionTimeLeft / perQuestionTime) * 100;
+  // Real-time subscription (quizzes & options) to keep questions in sync
+  useEffect(() => {
+    const channel = supabase
+      .channel("realtime_quiz_sync")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "quizzes" },
+        () => {
+          fetchQuestions();
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "options" },
+        () => {
+          fetchQuestions();
+        }
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [fetchQuestions]);
 
-  const handleSelect = (idx: number) => {
-    if (locked) return;
-    setSelectedIndex(idx);
-    setLocked(true);
-    // award points if correct
-    if (idx === currentQuestion.correctIndex) {
-      setScore((s) => s + currentQuestion.points);
-    }
-    // brief delay before auto advance (slightly longer on last question so user sees result highlight)
-    const delay = currentIndex + 1 === QUESTIONS.length ? 1200 : 900;
-    setTimeout(() => handleNext(true), delay);
-  };
+  // Guard: if still loading or no questions, mimic original UI container but empty
+  const currentQuestion = QUESTIONS[currentIndex];
+  const perQuestionTime = currentQuestion?.time ?? TOTAL_TIME;
 
-  const handleNext = (wasInteraction: boolean) => {
+  // Timer effect for per-question timer (same behavior)
+  const handleNext = useCallback(() => {
     setLocked(false);
     setSelectedIndex(null);
     if (currentIndex + 1 < QUESTIONS.length) {
       const nextIndex = currentIndex + 1;
       setCurrentIndex(nextIndex);
       const nxt = QUESTIONS[nextIndex];
-      setQuestionTimeLeft(nxt.time ?? TOTAL_TIME);
+      setQuestionTimeLeft(nxt?.time ?? TOTAL_TIME);
     } else {
       setShowResult(true);
     }
+  }, [currentIndex, QUESTIONS]);
+
+  useEffect(() => {
+    if (showResult || !currentQuestion) return;
+    if (questionTimeLeft <= 0) {
+      handleNext(); // unanswered auto-advance
+      return;
+    }
+    const id = setInterval(() => setQuestionTimeLeft((t) => t - 1), 1000);
+    return () => clearInterval(id);
+  }, [questionTimeLeft, showResult, currentQuestion, handleNext]);
+
+  const progressPercent = (questionTimeLeft / perQuestionTime) * 100;
+
+  const ensureUserName = () => {
+    if (userName) return true;
+    const name = window.prompt("Entrez votre nom pour participer au quiz:");
+    if (!name) return false;
+    const trimmed = name.trim();
+    if (!trimmed) return false;
+    setUserName(trimmed);
+    localStorage.setItem("quiz_username", trimmed);
+    return true;
   };
+
+  const handleSelect = (idx: number) => {
+    if (locked || !currentQuestion) return;
+    if (!ensureUserName()) return; // require name via prompt, UI unchanged
+    setSelectedIndex(idx);
+    setLocked(true);
+    if (idx === currentQuestion.correctIndex) {
+      setScore((s) => s + currentQuestion.points);
+    }
+    const delay = currentIndex + 1 === QUESTIONS.length ? 1200 : 900;
+    setTimeout(() => handleNext(), delay);
+  };
+
+  // If fetching or empty, we still render the same structure but with placeholders
+  if (loading || fetchError || QUESTIONS.length === 0) {
+    return (
+      <div className={styles.globalContainer}>
+        <Logo />
+        <div className={styles.content}>
+          <div className={styles.questionContainer}>
+            {fetchError ? fetchError : "Chargement des questions..."}
+          </div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+  // From here onward original UI (structure & classNames) is preserved.
 
   return (
     <div className={styles.globalContainer}>
