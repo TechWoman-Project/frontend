@@ -194,7 +194,8 @@ export default function QuizPage() {
             </div>
           </>
         )}
-        {showResult && (
+        {/* this is about results */}
+        {/* {showResult && (
           <div className={styles.resultBox}>
             <h2>Résultat</h2>
             <p>Votre score: {score} points</p>
@@ -212,9 +213,75 @@ export default function QuizPage() {
               Recommencer
             </button>
           </div>
+        )} */}
+        {/* ================ */}
+        {showResult && (
+          <div
+            className="flex justify-center items-center flex-col"
+            style={{ gap: "2rem" }}
+          >
+            <div
+              className="img"
+              style={{
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+              }}
+            >
+              <img
+                src="/assets/bravo.png"
+                alt="Description of image"
+                width={"80%"}
+              />
+            </div>
+            <div
+              className="msg"
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                textAlign: "center",
+                width: "60%",
+              }}
+            >
+              <div>
+                <h1
+                  style={{
+                    textAlign: "center",
+                    fontSize: "2rem",
+                    fontWeight: "bold",
+                  }}
+                >
+                  Vous avez fini
+                </h1>
+              </div>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "center",
+                  marginTop: "1rem",
+                  width: "100%",
+                }}
+              >
+                <button
+                  style={{
+                    background: "#3d116a",
+                    padding: "0.5rem 1rem",
+                    border: "none",
+                    borderRadius: "15px",
+                    cursor: "pointer",
+                    width: "100%",
+                    color: "white",
+                  }}
+                >
+                  Accueil
+                </button>
+              </div>
+            </div>
+          </div>
         )}
       </div>
-      <Footer /> 
+      <Footer />
     </div>
   );
 }
