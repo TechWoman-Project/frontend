@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import styles from "./quiz.module.css";
 import Logo from "@/components/Logo";
 import Footer from "@/components/Footer";
@@ -34,6 +34,7 @@ export default function QuizPage() {
   const [questionTimeLeft, setQuestionTimeLeft] = useState(TOTAL_TIME);
   const [showResult, setShowResult] = useState(false);
   const [locked, setLocked] = useState(false); // lock after selection until next
+  const hasInitialized = useRef(false); // Track if initialization has been done
 
   // Fetch active quizzes + options and build QUESTIONS list preserving UI contract
   const fetchQuestions = useCallback(async () => {
@@ -88,12 +89,55 @@ export default function QuizPage() {
     }
   }, []);
 
-  // Initial load + username restore
+  // Helper functions for name validation
+  const isValidFullName = (val: string) => {
+    const parts = val.trim().split(/\s+/);
+    return parts.length >= 2 && parts.every((p) => p.length >= 2);
+  };
+
+  const ensureUserName = useCallback(() => {
+    let attempt: string | null = null;
+    while (true) {
+      attempt = window.prompt("Entrez votre nom complet (ex: Prénom Nom):");
+      if (attempt === null) return false; // cancel
+      const trimmed = attempt.trim();
+      if (isValidFullName(trimmed)) {
+        setUserName(trimmed);
+        localStorage.setItem("quiz_username", trimmed);
+        return true;
+      }
+      alert(
+        "Veuillez entrer votre nom complet (au moins deux mots de 2 lettres)."
+      );
+    }
+  }, []); // Remove userName dependency to prevent recreating the function
+
+  // Initial load + username validation before quiz loads
   useEffect(() => {
-    const stored = localStorage.getItem("quiz_username");
-    if (stored) setUserName(stored);
-    fetchQuestions();
-  }, [fetchQuestions]);
+    // Prevent multiple initializations
+    if (hasInitialized.current) return;
+    hasInitialized.current = true;
+
+    const initializeUser = async () => {
+      const stored = localStorage.getItem("quiz_username");
+      if (stored && isValidFullName(stored)) {
+        setUserName(stored);
+        await fetchQuestions();
+      } else {
+        // Clear invalid stored name and prompt for new one
+        localStorage.removeItem("quiz_username");
+        setLoading(false); // Stop loading to show name prompt
+        // Automatically trigger the name prompt
+        setTimeout(() => {
+          if (ensureUserName()) {
+            fetchQuestions();
+          }
+        }, 100); // Small delay to ensure component is mounted
+      }
+    };
+
+    initializeUser();
+  }, [fetchQuestions, ensureUserName]); // Include dependencies but use ref to prevent re-runs
 
   // Real-time subscription (quizzes & options) to keep questions in sync
   useEffect(() => {
@@ -123,6 +167,32 @@ export default function QuizPage() {
   const currentQuestion = QUESTIONS[currentIndex];
   const perQuestionTime = currentQuestion?.time ?? TOTAL_TIME;
 
+  // Insert final score summary after quiz completion
+  const insertFinalScore = useCallback(
+    async (userName: string, totalScore: number) => {
+      try {
+        // Insert or update the total score for this user across all quizzes
+        const { error } = await supabase.from("scores").upsert(
+          {
+            quiz_id: "quiz_session", // Use a session identifier since we're tracking total score
+            user_name: userName,
+            points: totalScore,
+          },
+          {
+            onConflict: "quiz_id,user_name",
+          }
+        );
+
+        if (error) {
+          console.error("Error inserting final score:", error);
+        }
+      } catch (err) {
+        console.error("Failed to insert final score:", err);
+      }
+    },
+    []
+  );
+
   // Timer effect for per-question timer (same behavior)
   const handleNext = useCallback(() => {
     setLocked(false);
@@ -133,9 +203,13 @@ export default function QuizPage() {
       const nxt = QUESTIONS[nextIndex];
       setQuestionTimeLeft(nxt?.time ?? TOTAL_TIME);
     } else {
+      // Quiz completed - insert final score
+      if (userName) {
+        insertFinalScore(userName, score);
+      }
       setShowResult(true);
     }
-  }, [currentIndex, QUESTIONS]);
+  }, [currentIndex, QUESTIONS, userName, score, insertFinalScore]);
 
   useEffect(() => {
     if (showResult || !currentQuestion) return;
@@ -149,28 +223,76 @@ export default function QuizPage() {
 
   const progressPercent = (questionTimeLeft / perQuestionTime) * 100;
 
-  const ensureUserName = () => {
-    if (userName) return true;
-    const name = window.prompt("Entrez votre nom pour participer au quiz:");
-    if (!name) return false;
-    const trimmed = name.trim();
-    if (!trimmed) return false;
-    setUserName(trimmed);
-    localStorage.setItem("quiz_username", trimmed);
-    return true;
+  // Insert vote into database
+  const insertVote = async (
+    quizId: string,
+    optionId: string,
+    userName: string
+  ) => {
+    try {
+      const { error } = await supabase.from("votes").insert({
+        quiz_id: quizId,
+        option_id: optionId,
+        user_name: userName,
+      });
+
+      if (error && error.code !== "23505") {
+        // Ignore duplicate vote constraint
+        console.error("Error inserting vote:", error);
+      }
+    } catch (err) {
+      console.error("Failed to insert vote:", err);
+    }
   };
 
-  const handleSelect = (idx: number) => {
-    if (locked || !currentQuestion) return;
-    if (!ensureUserName()) return; // require name via prompt, UI unchanged
+  const handleSelect = async (idx: number) => {
+    if (locked || !currentQuestion || !userName) return;
+
     setSelectedIndex(idx);
     setLocked(true);
-    if (idx === currentQuestion.correctIndex) {
-      setScore((s) => s + currentQuestion.points);
+
+    // Get the actual option ID from database for vote insertion
+    try {
+      const { data: options, error } = await supabase
+        .from("options")
+        .select("id, is_correct")
+        .eq("quiz_id", currentQuestion.quizId)
+        .order("order_index");
+
+      if (error) throw error;
+
+      if (options && options[idx]) {
+        // Insert vote into database (for tracking individual answers)
+        await insertVote(currentQuestion.quizId, options[idx].id, userName);
+
+        // Update local score if correct (will be saved at end)
+        if (idx === currentQuestion.correctIndex) {
+          setScore((s) => s + POINTS_PER_QUESTION);
+        }
+      }
+    } catch (err) {
+      console.error("Error handling vote:", err);
     }
+
     const delay = currentIndex + 1 === QUESTIONS.length ? 1200 : 900;
     setTimeout(() => handleNext(), delay);
   };
+
+  // If no username, show name prompt before quiz loads
+  if (!userName) {
+    return (
+      <div className={styles.globalContainer}>
+        <Logo />
+        <div className={styles.content}>
+          <div className={styles.questionContainer}>
+            Préparation du quiz... Veuillez entrer votre nom complet pour
+            continuer.
+          </div>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
 
   // If fetching or empty, we still render the same structure but with placeholders
   if (loading || fetchError || QUESTIONS.length === 0) {
@@ -344,6 +466,9 @@ export default function QuizPage() {
                 }}
               >
                 <button
+                  onClick={() => {
+                    window.location.href = "/";
+                  }}
                   style={{
                     background: "#3d116a",
                     padding: "0.5rem 1rem",
