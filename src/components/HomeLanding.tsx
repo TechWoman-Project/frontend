@@ -95,10 +95,10 @@ export default function HomeLanding() {
       </section>
 
       <div className="tw-buttons-dual">
-        <Link href="/quiz" className="tw-btn-primary" role="button">
+        <Link href="/start-quiz" className="tw-btn-primary" role="button">
           Participer au Quiz
         </Link>
-        <Link href="/start-quiz" className="tw-btn-secondary" role="button">
+        <Link href="/vote" className="tw-btn-secondary" role="button">
           Voter
         </Link>
       </div>
