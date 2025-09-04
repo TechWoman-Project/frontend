@@ -44,7 +44,8 @@ export default function RealtimeStatus() {
         padding: "8px 12px",
         borderRadius: "4px",
         fontSize: "12px",
-        zIndex: 1000,
+              zIndex: 1000,
+        display: "none",
       }}
     >
       Real-time: {isConnected ? "Connected" : "Disconnected"}

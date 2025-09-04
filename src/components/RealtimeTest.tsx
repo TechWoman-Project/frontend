@@ -143,6 +143,7 @@ export default function RealtimeTest() {
         fontSize: "12px",
         zIndex: 1000,
         boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
+        display: "none",
       }}
     >
       <div style={{ fontWeight: "bold", marginBottom: "8px" }}>
