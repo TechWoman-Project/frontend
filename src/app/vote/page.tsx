@@ -262,7 +262,7 @@ export default function VotePage() {
               alignItems: "center",
             }}
           >
-            <h1 style={{ fontSize: "2rem", fontWeight: "bold" }}>
+            <h1 style={{ fontSize: "2rem", fontWeight: "bold", textAlign: "center" }}>
               Merci pour votre participation
             </h1>
             {/* <button
