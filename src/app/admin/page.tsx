@@ -5,6 +5,7 @@ import { supabase } from "@/lib/supabase";
 interface Quiz {
   id: string;
   question: string;
+  kind: "quiz" | "opinion";
   status: "draft" | "active" | "closed";
   starts_at: string | null;
   ends_at: string | null;
@@ -33,6 +34,7 @@ export default function AdminPage() {
   // Form state
   const [formData, setFormData] = useState({
     question: "",
+    kind: "quiz" as "quiz" | "opinion",
     status: "draft" as "draft" | "active" | "closed",
     starts_at: "",
     ends_at: "",
@@ -97,7 +99,10 @@ export default function AdminPage() {
       return;
     }
 
-    if (formData.correctOption >= validOptions.length) {
+    if (
+      formData.kind === "quiz" &&
+      formData.correctOption >= validOptions.length
+    ) {
       alert("Please select a valid correct answer");
       return;
     }
@@ -113,6 +118,7 @@ export default function AdminPage() {
           .from("quizzes")
           .update({
             question: formData.question,
+            kind: formData.kind,
             status: formData.status,
             starts_at: formData.starts_at || null,
             ends_at: formData.ends_at || null,
@@ -133,6 +139,7 @@ export default function AdminPage() {
           .from("quizzes")
           .insert({
             question: formData.question,
+            kind: formData.kind,
             status: formData.status,
             starts_at: formData.starts_at || null,
             ends_at: formData.ends_at || null,
@@ -149,7 +156,8 @@ export default function AdminPage() {
         quiz_id: quizData.id,
         text: optionText,
         order_index: index,
-        is_correct: index === formData.correctOption,
+        is_correct:
+          formData.kind === "quiz" ? index === formData.correctOption : false,
       }));
 
       const { error: optionsError } = await supabase
@@ -161,6 +169,7 @@ export default function AdminPage() {
       // Reset form
       setFormData({
         question: "",
+        kind: "quiz",
         status: "draft",
         starts_at: "",
         ends_at: "",
@@ -189,6 +198,7 @@ export default function AdminPage() {
     setEditingQuiz(quiz);
     setFormData({
       question: quiz.question,
+      kind: quiz.kind || "quiz",
       status: quiz.status,
       starts_at: quiz.starts_at?.slice(0, 16) || "", // Format for datetime-local input
       ends_at: quiz.ends_at?.slice(0, 16) || "",
@@ -277,11 +287,9 @@ export default function AdminPage() {
         <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
           <div className="flex justify-between items-center">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">
-                Quiz Admin Panel
-              </h1>
+              <h1 className="text-3xl font-bold text-gray-900">Admin Panel</h1>
               <p className="text-gray-600 mt-2">
-                Manage quiz questions and answers
+                Manage quiz questions and opinion polls
               </p>
             </div>
             <button
@@ -295,11 +303,14 @@ export default function AdminPage() {
                   ends_at: "",
                   options: ["", "", "", ""],
                   correctOption: 0,
+                  kind: "quiz",
                 });
               }}
               className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors"
             >
-              {showCreateForm ? "Cancel" : "Create New Quiz"}
+              {showCreateForm
+                ? "Cancel"
+                : `Create New ${formData.kind === "quiz" ? "Quiz" : "Opinion"}`}
             </button>
           </div>
         </div>
@@ -308,7 +319,9 @@ export default function AdminPage() {
         {showCreateForm && (
           <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
             <h2 className="text-2xl font-semibold mb-6">
-              {editingQuiz ? "Edit Quiz" : "Create New Quiz"}
+              {editingQuiz
+                ? `Edit ${editingQuiz.kind === "quiz" ? "Quiz" : "Opinion"}`
+                : `Create New ${formData.kind === "quiz" ? "Quiz" : "Opinion"}`}
             </h2>
 
             <form onSubmit={handleSubmit} className="space-y-6">
@@ -324,9 +337,54 @@ export default function AdminPage() {
                   }
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   rows={3}
-                  placeholder="Enter your quiz question..."
+                  placeholder={
+                    formData.kind === "quiz"
+                      ? "Enter your quiz question..."
+                      : "Enter your opinion question..."
+                  }
                   required
                 />
+              </div>
+
+              {/* Type Selector */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Type
+                </label>
+                <div className="flex space-x-4">
+                  <label className="inline-flex items-center">
+                    <input
+                      type="radio"
+                      name="kind"
+                      value="quiz"
+                      checked={formData.kind === "quiz"}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          kind: e.target.value as "quiz" | "opinion",
+                        })
+                      }
+                      className="text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className="ml-2">Quiz (with correct answer)</span>
+                  </label>
+                  <label className="inline-flex items-center">
+                    <input
+                      type="radio"
+                      name="kind"
+                      value="opinion"
+                      checked={formData.kind === "opinion"}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          kind: e.target.value as "quiz" | "opinion",
+                        })
+                      }
+                      className="text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className="ml-2">Opinion (voting only)</span>
+                  </label>
+                </div>
               </div>
 
               {/* Status and Timing */}
@@ -384,7 +442,9 @@ export default function AdminPage() {
               <div>
                 <div className="flex justify-between items-center mb-4">
                   <label className="block text-sm font-medium text-gray-700">
-                    Answer Options
+                    {formData.kind === "quiz"
+                      ? "Answer Options"
+                      : "Voting Options"}
                   </label>
                   <button
                     type="button"
@@ -398,16 +458,18 @@ export default function AdminPage() {
                 <div className="space-y-3">
                   {formData.options.map((option, index) => (
                     <div key={index} className="flex items-center space-x-3">
-                      <input
-                        type="radio"
-                        name="correctOption"
-                        checked={formData.correctOption === index}
-                        onChange={() =>
-                          setFormData({ ...formData, correctOption: index })
-                        }
-                        className="text-green-600 focus:ring-green-500"
-                        title="Mark as correct answer"
-                      />
+                      {formData.kind === "quiz" && (
+                        <input
+                          type="radio"
+                          name="correctOption"
+                          checked={formData.correctOption === index}
+                          onChange={() =>
+                            setFormData({ ...formData, correctOption: index })
+                          }
+                          className="text-green-600 focus:ring-green-500"
+                          title="Mark as correct answer"
+                        />
+                      )}
                       <input
                         type="text"
                         value={option}
@@ -430,9 +492,15 @@ export default function AdminPage() {
                     </div>
                   ))}
                 </div>
-                <p className="text-sm text-gray-500 mt-2">
-                  Select the radio button next to the correct answer
-                </p>
+                {formData.kind === "quiz" ? (
+                  <p className="text-sm text-gray-500 mt-2">
+                    Select the radio button next to the correct answer
+                  </p>
+                ) : (
+                  <p className="text-sm text-gray-500 mt-2">
+                    Opinion voting - no correct answer needed
+                  </p>
+                )}
               </div>
 
               {/* Submit Button */}
@@ -455,8 +523,10 @@ export default function AdminPage() {
                   {loading
                     ? "Saving..."
                     : editingQuiz
-                    ? "Update Quiz"
-                    : "Create Quiz"}
+                    ? `Update ${
+                        editingQuiz.kind === "quiz" ? "Quiz" : "Opinion"
+                      }`
+                    : `Create ${formData.kind === "quiz" ? "Quiz" : "Opinion"}`}
                 </button>
               </div>
             </form>
@@ -467,7 +537,7 @@ export default function AdminPage() {
         <div className="bg-white rounded-lg shadow-lg overflow-hidden">
           <div className="px-6 py-4 border-b border-gray-200">
             <h2 className="text-xl font-semibold text-gray-900">
-              Existing Quizzes ({quizzes.length})
+              All Items ({quizzes.length})
             </h2>
           </div>
 
@@ -495,6 +565,15 @@ export default function AdminPage() {
                           }`}
                         >
                           {quiz.status}
+                        </span>
+                        <span
+                          className={`px-2 py-1 text-xs font-medium rounded-full ${
+                            quiz.kind === "quiz"
+                              ? "bg-blue-100 text-blue-800"
+                              : "bg-purple-100 text-purple-800"
+                          }`}
+                        >
+                          {quiz.kind}
                         </span>
                       </div>
 

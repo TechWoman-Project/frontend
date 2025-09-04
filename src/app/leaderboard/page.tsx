@@ -34,7 +34,7 @@ export default function LeaderboardPage() {
       setLoading(true);
       setError(null);
 
-      // Get all scores with quiz details
+      // Get all scores with quiz details (only for kind='quiz')
       const { data: scores, error: scoresError } = await supabase
         .from("scores")
         .select(
@@ -42,9 +42,10 @@ export default function LeaderboardPage() {
           user_name,
           points,
           quiz_id,
-          quizzes!inner(question)
+          quizzes!inner(question, kind)
         `
         )
+        .eq("quizzes.kind", "quiz")
         .order("points", { ascending: false });
 
       if (scoresError) throw scoresError;

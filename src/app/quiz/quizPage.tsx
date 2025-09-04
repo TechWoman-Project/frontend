@@ -45,6 +45,7 @@ export default function QuizPage() {
         .from("quizzes")
         .select("id, question, status, starts_at, ends_at, created_at")
         .eq("status", "active")
+        .eq("kind", "quiz")
         .order("created_at", { ascending: true });
       if (qErr) throw qErr;
       const built: QuizQuestion[] = [];
