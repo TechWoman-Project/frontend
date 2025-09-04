@@ -40,11 +40,12 @@ export default function VotePage() {
       localStorage.setItem("vote_anon_id", gen);
     }
     setParticipantId(existing);
+    return existing;
   }, []);
 
   // Fetch (or refresh) opinions. When reset=true we treat it as a fresh session; otherwise we preserve progress.
   const fetchOpinions = useCallback(
-    async (reset: boolean) => {
+    async (reset: boolean, overridePid?: string) => {
       try {
         if (reset) setLoading(true); // only show global loader on first load
         setFetchError(null);
@@ -75,15 +76,54 @@ export default function VotePage() {
             });
           }
         }
+        const pid = overridePid || participantId;
+        // If we have a participant id, fetch their votes for these opinions to decide if they already completed all.
+        let votedSet: Set<string> | null = null;
+        if (pid && built.length) {
+          try {
+            const quizIds = built.map((b) => b.quizId);
+            const { data: votesData, error: vErr } = await supabase
+              .from("votes")
+              .select("quiz_id")
+              .in("quiz_id", quizIds)
+              .eq("user_name", pid);
+            if (vErr) throw vErr;
+            if (votesData) {
+              type VoteRow = { quiz_id: string };
+              votedSet = new Set(
+                (votesData as VoteRow[]).map((v) => v.quiz_id)
+              );
+            }
+          } catch (voteErr) {
+            console.warn("Could not fetch existing votes for user", voteErr);
+          }
+        }
 
         setOpinions(() => built);
 
         if (reset) {
-          // Initial load: start from first
-          setCurrentIndex(0);
-          setSelectedIndex(null);
-          setShowResult(false);
-          setLocked(false);
+          if (votedSet && votedSet.size === built.length && built.length > 0) {
+            // User already voted for every opinion: show thank you directly
+            setShowResult(true);
+            setCurrentIndex(0);
+            setSelectedIndex(null);
+            setLocked(true);
+          } else if (votedSet && votedSet.size > 0) {
+            // Skip past opinions already voted: go to first not-voted
+            const firstUnvoted = built.findIndex(
+              (o) => !votedSet!.has(o.quizId)
+            );
+            setCurrentIndex(firstUnvoted === -1 ? 0 : firstUnvoted);
+            setSelectedIndex(null);
+            setShowResult(false);
+            setLocked(false);
+          } else {
+            // Normal first load
+            setCurrentIndex(0);
+            setSelectedIndex(null);
+            setShowResult(false);
+            setLocked(false);
+          }
         } else {
           // Refresh: preserve current quiz if still present
           setCurrentIndex((prevIdx) => {
@@ -92,7 +132,6 @@ export default function VotePage() {
             const newIdx = built.findIndex((o) => o.quizId === prevQuizId);
             return newIdx === -1 ? 0 : newIdx;
           });
-          // Do not reset selectedIndex unless the selection no longer exists
           setSelectedIndex((prevSel) => {
             const currQuizId = opinions[currentIndex]?.quizId;
             const newQuizId =
@@ -100,6 +139,17 @@ export default function VotePage() {
             if (!newQuizId || newQuizId !== currQuizId) return null;
             return prevSel;
           });
+          // If previously completed (showResult true) but new opinions were added, resume
+          if (showResult && votedSet && votedSet.size < built.length) {
+            const firstUnvoted = built.findIndex(
+              (o) => !votedSet!.has(o.quizId)
+            );
+            if (firstUnvoted !== -1) {
+              setShowResult(false);
+              setCurrentIndex(firstUnvoted);
+              setLocked(false);
+            }
+          }
         }
       } catch (e) {
         console.error("Failed to fetch opinions", e);
@@ -108,15 +158,15 @@ export default function VotePage() {
         if (reset) setLoading(false);
       }
     },
-    [opinions, currentIndex]
+    [opinions, currentIndex, participantId, showResult]
   );
 
   // initial
   useEffect(() => {
     if (hasInitialized.current) return;
     hasInitialized.current = true;
-    initParticipant();
-    fetchOpinions(true);
+    const pid = initParticipant();
+    fetchOpinions(true, pid);
   }, [fetchOpinions, initParticipant]);
 
   // realtime - listen for changes to opinions (quizzes and options)
@@ -262,7 +312,13 @@ export default function VotePage() {
               alignItems: "center",
             }}
           >
-            <h1 style={{ fontSize: "2rem", fontWeight: "bold", textAlign: "center" }}>
+            <h1
+              style={{
+                fontSize: "2rem",
+                fontWeight: "bold",
+                textAlign: "center",
+              }}
+            >
               Merci pour votre participation
             </h1>
             {/* <button

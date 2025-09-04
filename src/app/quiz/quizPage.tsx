@@ -24,6 +24,7 @@ const POINTS_PER_QUESTION = 10; // fixed score per correct answer
 
 export default function QuizPage() {
   // Dynamic questions state replaces static QUESTIONS constant
+  const COMPLETION_KEY = "quiz_completed_v1";
   const [QUESTIONS, setQuestions] = useState<QuizQuestion[]>([]);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState<string | null>(null);
@@ -37,58 +38,94 @@ export default function QuizPage() {
   const hasInitialized = useRef(false); // Track if initialization has been done
 
   // Fetch active quizzes + options and build QUESTIONS list preserving UI contract
-  const fetchQuestions = useCallback(async () => {
-    try {
-      setLoading(true);
-      setFetchError(null);
-      const { data: quizzes, error: qErr } = await supabase
-        .from("quizzes")
-        .select("id, question, status, starts_at, ends_at, created_at")
-        .eq("status", "active")
-        .eq("kind", "quiz")
-        .order("created_at", { ascending: true });
-      if (qErr) throw qErr;
-      const built: QuizQuestion[] = [];
-      if (quizzes && quizzes.length) {
-        for (let i = 0; i < quizzes.length; i++) {
-          const quiz = quizzes[i];
-          const { data: opts, error: oErr } = await supabase
-            .from("options")
-            .select("text,is_correct,order_index")
-            .eq("quiz_id", quiz.id)
-            .order("order_index", { ascending: true });
-          if (oErr) throw oErr;
-          if (!opts || opts.length < 2) continue; // need at least 2 options
-          const correctIndex = Math.max(
-            0,
-            opts.findIndex((o) => o.is_correct)
-          );
-          built.push({
-            id: built.length + 1, // sequential id for UI
-            quizId: quiz.id,
-            question: quiz.question,
-            options: opts.map((o) => o.text),
-            correctIndex: correctIndex >= 0 ? correctIndex : 0,
-            points: POINTS_PER_QUESTION,
-            time: ANSWER_TIME,
+  // Fetch (or refresh) questions. When reset=true we start a brand new session.
+  // Otherwise we preserve current progress, current question, score and timer if possible.
+  const fetchQuestions = useCallback(
+    async (reset: boolean) => {
+      try {
+        if (reset) setLoading(true); // only show global loader for first load
+        setFetchError(null);
+        const { data: quizzes, error: qErr } = await supabase
+          .from("quizzes")
+          .select("id, question, status, starts_at, ends_at, created_at")
+          .eq("status", "active")
+          .eq("kind", "quiz")
+          .order("created_at", { ascending: true });
+        if (qErr) throw qErr;
+        const built: QuizQuestion[] = [];
+        if (quizzes && quizzes.length) {
+          for (let i = 0; i < quizzes.length; i++) {
+            const quiz = quizzes[i];
+            const { data: opts, error: oErr } = await supabase
+              .from("options")
+              .select("text,is_correct,order_index")
+              .eq("quiz_id", quiz.id)
+              .order("order_index", { ascending: true });
+            if (oErr) throw oErr;
+            if (!opts || opts.length < 2) continue;
+            const correctIndex = Math.max(
+              0,
+              opts.findIndex((o) => o.is_correct)
+            );
+            built.push({
+              id: built.length + 1,
+              quizId: quiz.id,
+              question: quiz.question,
+              options: opts.map((o) => o.text),
+              correctIndex: correctIndex >= 0 ? correctIndex : 0,
+              points: POINTS_PER_QUESTION,
+              time: ANSWER_TIME,
+            });
+          }
+        }
+
+        setQuestions(built);
+
+        if (reset) {
+          setCurrentIndex(0);
+          setSelectedIndex(null);
+          setShowResult(false);
+          setLocked(false);
+          setScore(0);
+          setQuestionTimeLeft(built[0]?.time ?? TOTAL_TIME);
+        } else {
+          // Preserve current question if it still exists
+          setCurrentIndex((prevIdx) => {
+            const prevQuizId = QUESTIONS[prevIdx]?.quizId;
+            if (!prevQuizId) return 0;
+            const newIdx = built.findIndex((q) => q.quizId === prevQuizId);
+            return newIdx === -1
+              ? Math.min(prevIdx, Math.max(0, built.length - 1))
+              : newIdx;
+          });
+          // Preserve selection only if same question and option still valid
+          setSelectedIndex((prevSel) => {
+            if (prevSel == null) return prevSel;
+            const prevQuizId = QUESTIONS[currentIndex]?.quizId;
+            const newIdx = built.findIndex((q) => q.quizId === prevQuizId);
+            if (newIdx === -1) return null;
+            const optionCount = built[newIdx].options.length;
+            return prevSel < optionCount ? prevSel : null;
+          });
+          // Adjust timer only if current question changed
+          setQuestionTimeLeft((prevTime) => {
+            const prevQuizId = QUESTIONS[currentIndex]?.quizId;
+            const newIdx = built.findIndex((q) => q.quizId === prevQuizId);
+            if (newIdx === -1) {
+              return built[0]?.time ?? TOTAL_TIME;
+            }
+            return prevTime; // keep remaining time for continuity
           });
         }
+      } catch (e) {
+        console.error("Failed to fetch quizzes", e);
+        setFetchError("Impossible de charger les quiz.");
+      } finally {
+        if (reset) setLoading(false);
       }
-      setQuestions(built);
-      // Reset progression if data set changed
-      setCurrentIndex(0);
-      setSelectedIndex(null);
-      setShowResult(false);
-      setLocked(false);
-      setScore(0);
-      setQuestionTimeLeft(built[0]?.time ?? TOTAL_TIME);
-    } catch (e) {
-      console.error("Failed to fetch quizzes", e);
-      setFetchError("Impossible de charger les quiz.");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+    },
+    [QUESTIONS, currentIndex]
+  );
 
   // Helper functions for name validation
   const isValidFullName = (val: string) => {
@@ -123,7 +160,35 @@ export default function QuizPage() {
       const stored = localStorage.getItem("quiz_username");
       if (stored && isValidFullName(stored)) {
         setUserName(stored);
-        await fetchQuestions();
+        // If user previously completed (local flag) skip fetching questions
+        const alreadyDoneLS = localStorage.getItem(COMPLETION_KEY) === "1";
+        if (alreadyDoneLS) {
+          setShowResult(true);
+          setLoading(false);
+          return;
+        }
+        // Fallback: verify via scores table (in case LS cleared or new device)
+        try {
+          const { data: existing, error: scoreErr } = await supabase
+            .from("scores")
+            .select("points")
+            .eq("quiz_id", "quiz_session")
+            .eq("user_name", stored)
+            .maybeSingle();
+          if (!scoreErr && existing) {
+            // Mark as completed for faster future loads
+            localStorage.setItem(COMPLETION_KEY, "1");
+            setShowResult(true);
+            setLoading(false);
+            return;
+          }
+        } catch (err) {
+          console.warn(
+            "Score lookup failed, proceeding to fetch questions",
+            err
+          );
+        }
+        await fetchQuestions(true);
       } else {
         // Clear invalid stored name and prompt for new one
         localStorage.removeItem("quiz_username");
@@ -131,7 +196,7 @@ export default function QuizPage() {
         // Automatically trigger the name prompt
         setTimeout(() => {
           if (ensureUserName()) {
-            fetchQuestions();
+            fetchQuestions(true);
           }
         }, 100); // Small delay to ensure component is mounted
       }
@@ -148,14 +213,14 @@ export default function QuizPage() {
         "postgres_changes",
         { event: "*", schema: "public", table: "quizzes" },
         () => {
-          fetchQuestions();
+          fetchQuestions(false); // refresh without resetting progress
         }
       )
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "options" },
         () => {
-          fetchQuestions();
+          fetchQuestions(false); // refresh without resetting progress
         }
       )
       .subscribe();
@@ -209,6 +274,9 @@ export default function QuizPage() {
         insertFinalScore(userName, score);
       }
       setShowResult(true);
+      try {
+        localStorage.setItem(COMPLETION_KEY, "1");
+      } catch {}
     }
   }, [currentIndex, QUESTIONS, userName, score, insertFinalScore]);
 
@@ -296,7 +364,7 @@ export default function QuizPage() {
   }
 
   // If fetching or empty, we still render the same structure but with placeholders
-  if (loading || fetchError || QUESTIONS.length === 0) {
+  if (!showResult && (loading || fetchError || QUESTIONS.length === 0)) {
     return (
       <div className={styles.globalContainer}>
         <Logo />
@@ -455,7 +523,7 @@ export default function QuizPage() {
                     fontWeight: "bold",
                   }}
                 >
-                  Vous avez fini
+                  Vous avez fini!
                 </h1>
               </div>
               <div
