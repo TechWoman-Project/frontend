@@ -14,11 +14,13 @@ interface LeaderboardEntry {
   rank: number;
 }
 
-interface QuizScore {
-  quiz_id: string;
+// Row shape returned by the scores + joined quizzes select
+type JoinedQuiz = { question: string };
+interface ScoreRow {
   user_name: string;
   points: number;
-  question: string;
+  quiz_id: string;
+  quizzes: JoinedQuiz | JoinedQuiz[]; // Supabase may return object or array
 }
 
 export default function LeaderboardPage() {
@@ -62,7 +64,7 @@ export default function LeaderboardPage() {
         }
       >();
 
-      scores.forEach((score: any) => {
+      (scores as unknown as ScoreRow[]).forEach((score) => {
         const existing = userScores.get(score.user_name) || {
           total_score: 0,
           quiz_count: 0,
