@@ -37,7 +37,7 @@ export default function LeaderboardPage() {
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [animationDelay, setAnimationDelay] = useState(0);
+  // animationDelay removed (no list animation after simplification)
 
   const fetchLeaderboard = async () => {
     try {
@@ -160,8 +160,7 @@ export default function LeaderboardPage() {
 
       setLeaderboard(entries);
 
-      // Trigger staggered animation
-      setTimeout(() => setAnimationDelay(100), 300);
+      // (staggered animation removed in podium-only view)
     } catch (err) {
       console.error("Error fetching leaderboard:", err);
       setError("Erreur lors du chargement du classement.");
@@ -175,31 +174,7 @@ export default function LeaderboardPage() {
     fetchLeaderboard();
   }, []);
 
-  const getRankIcon = (rank: number) => {
-    switch (rank) {
-      case 1:
-        return "🥇";
-      case 2:
-        return "🥈";
-      case 3:
-        return "🥉";
-      default:
-        return `#${rank}`;
-    }
-  };
-
-  const getRankClass = (rank: number) => {
-    switch (rank) {
-      case 1:
-        return styles.goldRank;
-      case 2:
-        return styles.silverRank;
-      case 3:
-        return styles.bronzeRank;
-      default:
-        return styles.normalRank;
-    }
-  };
+  // Helpers removed (only top 3 podium displayed)
 
   if (loading) {
     return (
@@ -245,152 +220,69 @@ export default function LeaderboardPage() {
             Découvrez les meilleurs participants au quiz
           </p>
         </div>
-
-        {/* Stats Overview */}
-        <div className={styles.statsContainer}>
-          <div className={styles.statCard}>
-            <div className={styles.statNumber}>{leaderboard.length}</div>
-            <div className={styles.statLabel}>Participants</div>
-          </div>
-          <div className={styles.statCard}>
-            <div className={styles.statNumber}>
-              {leaderboard[0]?.total_score || 0}
-            </div>
-            <div className={styles.statLabel}>Meilleur Score</div>
-          </div>
-          <div className={styles.statCard}>
-            <div className={styles.statNumber}>
-              {Math.round(
-                leaderboard.reduce((sum, entry) => sum + entry.total_score, 0) /
-                  leaderboard.length || 0
-              )}
-            </div>
-            <div className={styles.statLabel}>Score Moyen</div>
-          </div>
-        </div>
-
-        {/* Leaderboard */}
-        <div className={styles.leaderboardContainer}>
-          {leaderboard.length === 0 ? (
+        {/* Podium Only */}
+        <div className={`${styles.leaderboardContainer} ${styles.podiumOnly}`}>
+          {leaderboard.length < 3 ? (
             <div className={styles.emptyState}>
-              <h3>Aucun score disponible</h3>
-              <p>Soyez le premier à participer au quiz!</p>
+              <h3>Pas assez de participants</h3>
+              <p>
+                Au moins 3 participants sont requis pour afficher le podium.
+              </p>
               <Link href="/quiz" className={styles.quizButton}>
-                Commencer le Quiz
+                Participer maintenant
               </Link>
             </div>
           ) : (
-            <>
-              {/* Top 3 Podium */}
-              {leaderboard.length >= 3 && (
-                <div className={styles.podiumContainer}>
-                  <div className={styles.podium}>
-                    {/* Second Place */}
-                    <div
-                      className={`${styles.podiumPlace} ${styles.secondPlace}`}
-                    >
-                      <div className={styles.podiumUser}>
-                        <div className={styles.podiumRank}>🥈</div>
-                        <div className={styles.podiumName}>
-                          {leaderboard[1]?.user_name}
-                        </div>
-                        <div className={styles.podiumScore}>
-                          {leaderboard[1]?.total_score} pts
-                        </div>
-                      </div>
-                      <div className={styles.podiumBar}></div>
+            <div className={styles.podiumContainer}>
+              <div className={`${styles.podium} ${styles.podiumLarge}`}>
+                {/* Second Place */}
+                <div className={`${styles.podiumPlace} ${styles.secondPlace}`}>
+                  <div className={styles.podiumUser}>
+                    <div className={styles.podiumRank}>🥈</div>
+                    <div className={styles.podiumName}>
+                      {leaderboard[1]?.user_name}
                     </div>
-
-                    {/* First Place */}
-                    <div
-                      className={`${styles.podiumPlace} ${styles.firstPlace}`}
-                    >
-                      <div className={styles.crown}>👑</div>
-                      <div className={styles.podiumUser}>
-                        <div className={styles.podiumRank}>🥇</div>
-                        <div className={styles.podiumName}>
-                          {leaderboard[0]?.user_name}
-                        </div>
-                        <div className={styles.podiumScore}>
-                          {leaderboard[0]?.total_score} pts
-                        </div>
-                      </div>
-                      <div className={styles.podiumBar}></div>
-                    </div>
-
-                    {/* Third Place */}
-                    <div
-                      className={`${styles.podiumPlace} ${styles.thirdPlace}`}
-                    >
-                      <div className={styles.podiumUser}>
-                        <div className={styles.podiumRank}>🥉</div>
-                        <div className={styles.podiumName}>
-                          {leaderboard[2]?.user_name}
-                        </div>
-                        <div className={styles.podiumScore}>
-                          {leaderboard[2]?.total_score} pts
-                        </div>
-                      </div>
-                      <div className={styles.podiumBar}></div>
+                    <div className={styles.podiumScore}>
+                      {leaderboard[1]?.total_score} pts
                     </div>
                   </div>
+                  <div className={styles.podiumBar}></div>
                 </div>
-              )}
-
-              {/* Full Leaderboard List */}
-              <div className={styles.leaderboardList}>
-                {leaderboard.map((entry, index) => (
-                  <div
-                    key={entry.user_name}
-                    className={`${styles.leaderboardItem} ${getRankClass(
-                      entry.rank
-                    )}`}
-                    style={{
-                      animationDelay: `${index * animationDelay}ms`,
-                    }}
-                  >
-                    <div className={styles.rankSection}>
-                      <span className={styles.rankIcon}>
-                        {getRankIcon(entry.rank)}
-                      </span>
+                {/* First Place */}
+                <div className={`${styles.podiumPlace} ${styles.firstPlace}`}>
+                  <div className={styles.crown}>👑</div>
+                  <div className={styles.podiumUser}>
+                    <div className={styles.podiumRank}>🥇</div>
+                    <div className={styles.podiumName}>
+                      {leaderboard[0]?.user_name}
                     </div>
-
-                    <div className={styles.userSection}>
-                      <div className={styles.userName}>{entry.user_name}</div>
-                      <div className={styles.userStats}>
-                        {entry.quiz_count} quiz{entry.quiz_count > 1 ? "s" : ""}{" "}
-                        • Moyenne: {entry.avg_score} pts
-                      </div>
-                    </div>
-
-                    <div className={styles.scoreSection}>
-                      <div className={styles.totalScore}>
-                        {entry.total_score}
-                      </div>
-                      <div className={styles.scoreLabel}>points</div>
-                    </div>
-
-                    <div className={styles.progressBar}>
-                      <div
-                        className={styles.progressFill}
-                        style={{
-                          width: `${
-                            (entry.total_score /
-                              (leaderboard[0]?.total_score || 1)) *
-                            100
-                          }%`,
-                        }}
-                      ></div>
+                    <div className={styles.podiumScore}>
+                      {leaderboard[0]?.total_score} pts
                     </div>
                   </div>
-                ))}
+                  <div className={styles.podiumBar}></div>
+                </div>
+                {/* Third Place */}
+                <div className={`${styles.podiumPlace} ${styles.thirdPlace}`}>
+                  <div className={styles.podiumUser}>
+                    <div className={styles.podiumRank}>🥉</div>
+                    <div className={styles.podiumName}>
+                      {leaderboard[2]?.user_name}
+                    </div>
+                    <div className={styles.podiumScore}>
+                      {leaderboard[2]?.total_score} pts
+                    </div>
+                  </div>
+                  <div className={styles.podiumBar}></div>
+                </div>
               </div>
-            </>
+            </div>
           )}
         </div>
 
         {/* Action Buttons */}
-        <div className={styles.actionButtons}>
+
+        {/* <div className={styles.actionButtons}>
           <Link href="/quiz" className={styles.quizButton}>
             🎯 Participer au Quiz
           </Link>
@@ -400,8 +292,9 @@ export default function LeaderboardPage() {
           <Link href="/" className={styles.homeButton}>
             🏠 Accueil
           </Link>
-        </div>
+        </div> */}
       </div>
+
       {/* <Footer /> */}
     </div>
   );

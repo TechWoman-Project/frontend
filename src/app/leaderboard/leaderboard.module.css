@@ -539,3 +539,52 @@
     max-width: 300px;
   }
 }
+
+/* Podium Only Variant */
+.podiumOnly {
+  display: flex;
+  justify-content: center;
+  animation: fadeIn 0.8s ease both;
+}
+
+.podiumLarge .podiumUser {
+  min-width: 200px;
+  padding: 1.5rem 2rem;
+  transform-origin: center bottom;
+  animation: scaleIn 0.6s ease forwards;
+}
+
+.podiumLarge .firstPlace .podiumUser {
+  animation-delay: 0.1s;
+}
+.podiumLarge .secondPlace .podiumUser {
+  animation-delay: 0.2s;
+}
+.podiumLarge .thirdPlace .podiumUser {
+  animation-delay: 0.3s;
+}
+
+.podiumLarge .podiumRank {
+  font-size: 2.4rem;
+}
+.podiumLarge .podiumName {
+  font-size: 1.2rem;
+}
+.podiumLarge .podiumScore {
+  font-size: 1.1rem;
+}
+
+@keyframes scaleIn {
+  0% {
+    transform: translateY(40px) scale(0.6);
+    opacity: 0;
+  }
+  60% {
+    transform: translateY(-10px) scale(1.05);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
