@@ -62,7 +62,7 @@ export default function LeaderboardPage() {
         }
       >();
 
-      scores.forEach((score: QuizScore) => {
+      scores.forEach((score: any) => {
         const existing = userScores.get(score.user_name) || {
           total_score: 0,
           quiz_count: 0,
