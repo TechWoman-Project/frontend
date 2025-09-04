@@ -42,56 +42,81 @@ export default function VotePage() {
     setParticipantId(existing);
   }, []);
 
-  const fetchOpinions = useCallback(async () => {
-    try {
-      setLoading(true);
-      setFetchError(null);
-      const { data: quizzes, error: qErr } = await supabase
-        .from("quizzes")
-        .select("id, question, status, created_at")
-        .eq("status", "active")
-        .eq("kind", "opinion")
-        .order("created_at", { ascending: true });
-      if (qErr) throw qErr;
-      const built: Opinion[] = [];
-      if (quizzes?.length) {
-        for (let i = 0; i < quizzes.length; i++) {
-          const quiz = quizzes[i];
-          const { data: opts, error: oErr } = await supabase
-            .from("options")
-            .select("id, text, order_index")
-            .eq("quiz_id", quiz.id)
-            .order("order_index", { ascending: true });
-          if (oErr) throw oErr;
-          if (!opts || opts.length === 0) continue;
-          built.push({
-            id: built.length + 1,
-            quizId: quiz.id,
-            opinion: quiz.question,
-            options: opts.map((o) => o.text),
-            optionIds: opts.map((o) => o.id),
+  // Fetch (or refresh) opinions. When reset=true we treat it as a fresh session; otherwise we preserve progress.
+  const fetchOpinions = useCallback(
+    async (reset: boolean) => {
+      try {
+        if (reset) setLoading(true); // only show global loader on first load
+        setFetchError(null);
+        const { data: quizzes, error: qErr } = await supabase
+          .from("quizzes")
+          .select("id, question, status, created_at")
+          .eq("status", "active")
+          .eq("kind", "opinion")
+          .order("created_at", { ascending: true });
+        if (qErr) throw qErr;
+        const built: Opinion[] = [];
+        if (quizzes?.length) {
+          for (let i = 0; i < quizzes.length; i++) {
+            const quiz = quizzes[i];
+            const { data: opts, error: oErr } = await supabase
+              .from("options")
+              .select("id, text, order_index")
+              .eq("quiz_id", quiz.id)
+              .order("order_index", { ascending: true });
+            if (oErr) throw oErr;
+            if (!opts || opts.length === 0) continue;
+            built.push({
+              id: built.length + 1,
+              quizId: quiz.id,
+              opinion: quiz.question,
+              options: opts.map((o) => o.text),
+              optionIds: opts.map((o) => o.id),
+            });
+          }
+        }
+
+        setOpinions(() => built);
+
+        if (reset) {
+          // Initial load: start from first
+          setCurrentIndex(0);
+          setSelectedIndex(null);
+          setShowResult(false);
+          setLocked(false);
+        } else {
+          // Refresh: preserve current quiz if still present
+          setCurrentIndex((prevIdx) => {
+            const prevQuizId = opinions[prevIdx]?.quizId;
+            if (!prevQuizId) return 0;
+            const newIdx = built.findIndex((o) => o.quizId === prevQuizId);
+            return newIdx === -1 ? 0 : newIdx;
+          });
+          // Do not reset selectedIndex unless the selection no longer exists
+          setSelectedIndex((prevSel) => {
+            const currQuizId = opinions[currentIndex]?.quizId;
+            const newQuizId =
+              built[built.findIndex((o) => o.quizId === currQuizId)]?.quizId;
+            if (!newQuizId || newQuizId !== currQuizId) return null;
+            return prevSel;
           });
         }
+      } catch (e) {
+        console.error("Failed to fetch opinions", e);
+        setFetchError("Impossible de charger les opinions.");
+      } finally {
+        if (reset) setLoading(false);
       }
-      setOpinions(built);
-      setCurrentIndex(0);
-      setSelectedIndex(null);
-      setShowResult(false);
-      setLocked(false);
-    } catch (e) {
-      console.error("Failed to fetch opinions", e);
-      setFetchError("Impossible de charger les opinions.");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+    },
+    [opinions, currentIndex]
+  );
 
   // initial
   useEffect(() => {
     if (hasInitialized.current) return;
     hasInitialized.current = true;
     initParticipant();
-    fetchOpinions();
+    fetchOpinions(true);
   }, [fetchOpinions, initParticipant]);
 
   // realtime - listen for changes to opinions (quizzes and options)
@@ -108,7 +133,7 @@ export default function VotePage() {
         },
         (payload) => {
           console.log("✅ Real-time opinion quiz change:", payload);
-          fetchOpinions();
+          fetchOpinions(false); // refresh without losing progress
         }
       )
       .on(
@@ -116,7 +141,7 @@ export default function VotePage() {
         { event: "*", schema: "public", table: "options" },
         (payload) => {
           console.log("✅ Real-time option change:", payload);
-          fetchOpinions();
+          fetchOpinions(false); // refresh without resetting progress
         }
       )
       .subscribe((status, err) => {
@@ -240,7 +265,7 @@ export default function VotePage() {
             <h1 style={{ fontSize: "2rem", fontWeight: "bold" }}>
               Merci pour votre participation
             </h1>
-            <button
+            {/* <button
               onClick={() => {
                 setCurrentIndex(0);
                 setShowResult(false);
@@ -257,7 +282,7 @@ export default function VotePage() {
               }}
             >
               Revoter
-            </button>
+            </button> */}
           </div>
         )}
       </div>
