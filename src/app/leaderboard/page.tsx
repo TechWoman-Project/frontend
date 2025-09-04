@@ -3,15 +3,16 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import styles from "./leaderboard.module.css";
 import Logo from "@/components/Logo";
-import Footer from "@/components/Footer";
 import Link from "next/link";
 
 interface LeaderboardEntry {
   user_name: string;
   total_score: number;
   quiz_count: number;
-  avg_score: number;
+  avg_score: number; // retained for display
   rank: number;
+  completed_at: string | null; // earliest completion timestamp
+  tie_seq?: number; // fallback ordering when no timestamps
 }
 
 // Row shape returned by the scores + joined quizzes select
@@ -21,6 +22,15 @@ interface ScoreRow {
   points: number;
   quiz_id: string;
   quizzes: JoinedQuiz | JoinedQuiz[]; // Supabase may return object or array
+  created_at?: string; // optional timestamp (depends on schema)
+  // updated_at removed to eliminate dependency
+}
+
+interface AggregateUserData {
+  total_score: number;
+  quiz_count: number;
+  quizzes: Set<string>;
+  completed_at: string | null; // earliest
 }
 
 export default function LeaderboardPage() {
@@ -35,20 +45,47 @@ export default function LeaderboardPage() {
       setError(null);
 
       // Get all scores with quiz details (only for kind='quiz')
-      const { data: scores, error: scoresError } = await supabase
-        .from("scores")
-        .select(
+      // Try to fetch with created_at (for tie-breaker); if fails, retry without
+      let scores: ScoreRow[] | null = null;
+      let scoresError: unknown = null;
+      {
+        const { data, error } = await supabase
+          .from("scores")
+          .select(
+            `
+            user_name,
+            points,
+            quiz_id,
+            created_at,
+            quizzes!inner(question, kind)
           `
-          user_name,
-          points,
-          quiz_id,
-          quizzes!inner(question, kind)
-        `
-        )
-        .eq("quizzes.kind", "quiz")
-        .order("points", { ascending: false });
+          )
+          .eq("quizzes.kind", "quiz");
+        scores = data;
+        scoresError = error;
+      }
 
-      if (scoresError) throw scoresError;
+      if (scoresError) {
+        console.warn(
+          "Primary scores query failed (maybe created_at missing). Retrying without timestamp...",
+          scoresError
+        );
+        const { data: fallbackData, error: fallbackErr } = await supabase
+          .from("scores")
+          .select(
+            `
+            user_name,
+            points,
+            quiz_id,
+            quizzes!inner(question, kind)
+          `
+          )
+          .eq("quizzes.kind", "quiz");
+        if (fallbackErr) throw fallbackErr;
+        scores = fallbackData;
+      }
+
+      if (!scores) throw new Error("Scores query returned null");
 
       if (!scores || scores.length === 0) {
         setError("Aucun score disponible pour le moment.");
@@ -56,49 +93,70 @@ export default function LeaderboardPage() {
       }
 
       // Aggregate scores by user
-      const userScores = new Map<
-        string,
-        {
-          total_score: number;
-          quiz_count: number;
-          quizzes: Set<string>;
-        }
-      >();
+      const userScores = new Map<string, AggregateUserData>();
 
       (scores as unknown as ScoreRow[]).forEach((score) => {
-        const existing = userScores.get(score.user_name) || {
+        const ts = score.created_at || null;
+        const existing: AggregateUserData = userScores.get(score.user_name) || {
           total_score: 0,
           quiz_count: 0,
-          quizzes: new Set(),
+          quizzes: new Set<string>(),
+          completed_at: ts,
         };
 
         existing.total_score += score.points;
         existing.quizzes.add(score.quiz_id);
         existing.quiz_count = existing.quizzes.size;
+        // Keep EARLIEST timestamp to represent who finished first
+        if (ts) {
+          if (
+            !existing.completed_at ||
+            new Date(ts) < new Date(existing.completed_at)
+          ) {
+            existing.completed_at = ts;
+          }
+        }
 
         userScores.set(score.user_name, existing);
       });
 
       // Convert to leaderboard entries and sort
-      const entries: LeaderboardEntry[] = Array.from(userScores.entries())
-        .map(([user_name, data]) => ({
-          user_name,
-          total_score: data.total_score,
-          quiz_count: data.quiz_count,
-          avg_score: Math.round((data.total_score / data.quiz_count) * 10) / 10,
-          rank: 0,
-        }))
+      const entriesBase: LeaderboardEntry[] = Array.from(
+        userScores.entries()
+      ).map(([user_name, data], idx) => ({
+        user_name,
+        total_score: data.total_score,
+        quiz_count: data.quiz_count,
+        avg_score: Math.round((data.total_score / data.quiz_count) * 10) / 10,
+        rank: 0,
+        completed_at: data.completed_at,
+        tie_seq: idx, // stable fallback
+      }));
+
+      const anyTimestamps = entriesBase.some((e) => e.completed_at);
+
+      const entries: LeaderboardEntry[] = entriesBase
         .sort((a, b) => {
-          // Sort by total score first, then by average score
-          if (b.total_score !== a.total_score) {
+          // 1. Higher total score
+          if (b.total_score !== a.total_score)
             return b.total_score - a.total_score;
+          // 2. If we have timestamps, earlier completion wins
+          if (anyTimestamps) {
+            if (a.completed_at && b.completed_at) {
+              const diff =
+                new Date(a.completed_at).getTime() -
+                new Date(b.completed_at).getTime();
+              if (diff !== 0) return diff;
+            } else if (a.completed_at && !b.completed_at) {
+              return -1;
+            } else if (!a.completed_at && b.completed_at) {
+              return 1;
+            }
           }
-          return b.avg_score - a.avg_score;
+          // 3. Stable fallback: original sequence to avoid alphabetical bias
+          return (a.tie_seq ?? 0) - (b.tie_seq ?? 0);
         })
-        .map((entry, index) => ({
-          ...entry,
-          rank: index + 1,
-        }));
+        .map((entry, index) => ({ ...entry, rank: index + 1 }));
 
       setLeaderboard(entries);
 
@@ -113,27 +171,8 @@ export default function LeaderboardPage() {
   };
 
   useEffect(() => {
+    // Fetch once (no real-time subscription for performance)
     fetchLeaderboard();
-
-    // Set up real-time subscription for score updates
-    const channel = supabase
-      .channel("leaderboard_updates")
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "scores",
-        },
-        () => {
-          fetchLeaderboard();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
   }, []);
 
   const getRankIcon = (rank: number) => {
@@ -172,7 +211,7 @@ export default function LeaderboardPage() {
             <h2>Chargement du classement...</h2>
           </div>
         </div>
-        <Footer />
+        {/* <Footer /> */}
       </div>
     );
   }
@@ -190,7 +229,7 @@ export default function LeaderboardPage() {
             </button>
           </div>
         </div>
-        <Footer />
+        {/* <Footer /> */}
       </div>
     );
   }
@@ -363,7 +402,7 @@ export default function LeaderboardPage() {
           </Link>
         </div>
       </div>
-      <Footer />
+      {/* <Footer /> */}
     </div>
   );
 }
