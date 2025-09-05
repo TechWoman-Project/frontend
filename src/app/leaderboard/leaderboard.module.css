@@ -1,7 +1,11 @@
 /* Leaderboard Page Styles */
+:root {
+  --textColor: black;
+}
 .container {
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  /* background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); */
+  background: url("/assets/background.png") no-repeat center center fixed;
   display: flex;
   flex-direction: column;
 }
@@ -23,7 +27,7 @@
   justify-content: center;
   min-height: 50vh;
   text-align: center;
-  color: white;
+  color: black;
 }
 
 .loadingSpinner {
@@ -71,14 +75,14 @@
 .title {
   font-size: 3rem;
   font-weight: bold;
-  color: white;
+  color: var(--textColor);
   margin-bottom: 0.5rem;
   text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .subtitle {
   font-size: 1.2rem;
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--textColor);
   margin-bottom: 0;
 }
 
@@ -196,13 +200,13 @@
 
 .podiumName {
   font-weight: bold;
-  color: white;
+  color: var(--textColor);
   margin-bottom: 0.5rem;
   font-size: 1rem;
 }
 
 .podiumScore {
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--textColor);
   font-size: 0.9rem;
 }
 
