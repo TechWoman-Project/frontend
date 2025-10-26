@@ -1,8 +1,6 @@
 /* Leaderboard Page Styles */
-:root {
-  --textColor: black;
-}
 .container {
+  --textColor: black;
   min-height: 100vh;
   background: url("/phoneBg.svg") no-repeat center center fixed;
   background-size: cover;

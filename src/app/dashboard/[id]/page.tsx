@@ -1,10 +1,15 @@
 // src/app/dashboard/[id]/page.tsx
 import React from "react";
 
-export default function DashboardPage({ params }: { params: { id: string } }) {
+export default async function DashboardPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
   return (
     <div>
-      <h1>Dashboard {params.id}</h1>
+      <h1>Dashboard {id}</h1>
     </div>
   );
 }
