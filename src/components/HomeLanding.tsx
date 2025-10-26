@@ -6,12 +6,14 @@ import member1 from "@/../public/assets/members/member-1.png";
 import member2 from "@/../public/assets/members/member-2.png";
 import Footer from "./Footer";
 import Header from "./Header";
+import ScheduleModal from "./ScheduleModal";
 import logoSponsor1 from "@/../public/assets/sponsorLogo1.png";
 import logoSponsor2 from "@/../public/assets/sponsorLogo2.png";
 
 export default function HomeLanding() {
   const trackRef = useRef<HTMLDivElement | null>(null);
   const [index, setIndex] = useState(0);
+  const [isScheduleOpen, setIsScheduleOpen] = useState(false);
   const slides = [member1, member2];
 
   const indexRef = useRef(index);
@@ -94,8 +96,19 @@ export default function HomeLanding() {
       </div>
 
       <div className="tw-buttons-center">
-        <button className="tw-btn-primary">Programme</button>
+        <button
+          className="tw-btn-primary"
+          onClick={() => setIsScheduleOpen(true)}
+        >
+          Programme
+        </button>
       </div>
+
+      {/* Schedule Modal */}
+      <ScheduleModal
+        isOpen={isScheduleOpen}
+        onClose={() => setIsScheduleOpen(false)}
+      />
 
       <section className="tw-section">
         <h2

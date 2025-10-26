@@ -1,0 +1,582 @@
+/* ========================================
+   CSS VARIABLES
+   ======================================== */
+.scheduleModal {
+  /* Color Palette */
+  --color-primary-dark: rgb(79, 33, 132);
+  --color-primary-medium: rgb(106, 27, 154);
+  --color-timeline: rgb(156, 114, 201);
+  --color-container-light: #e9e1f8;
+  --color-container-medium: #e0d5f3;
+  --color-timestamp-bg: #d3c6e9;
+  --color-white: #ffffff;
+  --color-bg-start: #eae5f6;
+  --color-bg-end: #d3c7e8;
+  --color-shadow: rgba(79, 33, 132, 0.12);
+  --color-pattern-1: rgba(175, 150, 210, 0.1);
+  --color-pattern-2: rgba(190, 175, 220, 0.08);
+
+  /* Gradients */
+  --gradient-background: linear-gradient(
+    90deg,
+    var(--color-bg-start) 0%,
+    var(--color-bg-end) 100%
+  );
+  --gradient-purple-lavender: linear-gradient(
+    to right,
+    #e8ddff 0%,
+    #f5f1ff 65%,
+    #fdfcff 100%
+  );
+
+  /* Spacing (responsive using clamp) */
+  --spacing-xs: clamp(0.25rem, 0.5vw, 0.5rem);
+  --spacing-sm: clamp(0.5rem, 1vw, 0.75rem);
+  --spacing-md: clamp(0.75rem, 1.5vw, 1rem);
+  --spacing-lg: clamp(1rem, 2vw, 1.5rem);
+  --spacing-xl: clamp(1.5rem, 3vw, 2rem);
+  --spacing-2xl: clamp(2rem, 4vw, 3rem);
+  --spacing-3xl: clamp(2.5rem, 5vw, 3.75rem);
+  --spacing-4xl: clamp(3rem, 6vw, 5rem);
+
+  /* Font Sizes (responsive) */
+  --font-size-xs: clamp(0.75rem, 1.5vw, 0.875rem);
+  --font-size-sm: clamp(0.875rem, 1.75vw, 1rem);
+  --font-size-base: clamp(1rem, 2vw, 1.125rem);
+  --font-size-lg: clamp(1.125rem, 2.5vw, 1.375rem);
+  --font-size-xl: clamp(1.375rem, 3vw, 1.75rem);
+  --font-size-2xl: clamp(1.75rem, 3.5vw, 2.25rem);
+  --font-size-3xl: clamp(2.25rem, 4.5vw, 3rem);
+  --font-size-4xl: clamp(3rem, 6vw, 4rem);
+
+  /* Border Radius */
+  --radius-sm: clamp(0.5rem, 1vw, 0.75rem);
+  --radius-md: clamp(0.75rem, 1.5vw, 1rem);
+  --radius-lg: clamp(1rem, 2vw, 1.5rem);
+  --radius-xl: clamp(1.5rem, 3vw, 2rem);
+  --radius-full: 9999px;
+
+  /* Shadows */
+  --shadow-sm: 0 2px 8px var(--color-shadow);
+  --shadow-md: 0 4px 12px var(--color-shadow);
+  --shadow-lg: 0 6px 18px var(--color-shadow);
+  --shadow-xl: 0 8px 24px var(--color-shadow);
+
+  /* Sizing */
+  --timeline-width: clamp(6px, 0.7vw, 8px);
+  --timeline-node-size: 0;
+  --container-max-width: 1200px;
+  --card-width: 50%;
+  --bar-width: clamp(40px, 5vw, 50px);
+
+  /* Transitions */
+  --transition-base: all 0.3s ease;
+  --transition-fast: all 0.2s ease;
+}
+
+/* Modal Overlay */
+.scheduleModal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(5px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease, visibility 0.3s ease;
+}
+
+.scheduleModal.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Modal Content */
+.modalContent {
+  background: var(--gradient-background);
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  position: relative;
+  animation: slideIn 0.4s ease-out;
+  padding: var(--spacing-2xl) var(--spacing-lg);
+}
+
+.modalContent::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: repeating-linear-gradient(
+      45deg,
+      transparent,
+      transparent 35px,
+      var(--color-pattern-1) 35px,
+      var(--color-pattern-1) 36px
+    ),
+    repeating-linear-gradient(
+      -45deg,
+      transparent,
+      transparent 35px,
+      var(--color-pattern-2) 35px,
+      var(--color-pattern-2) 36px
+    );
+  pointer-events: none;
+  z-index: 0;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateY(-50px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Close Button */
+.closeBtn {
+  position: fixed;
+  top: clamp(1.5rem, 3vw, 2.5rem);
+  right: clamp(1.5rem, 3vw, 2.5rem);
+  width: clamp(42px, 5vw, 52px);
+  height: clamp(42px, 5vw, 52px);
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(10px);
+  border: 1.5px solid rgba(156, 114, 201, 0.3);
+  border-radius: 50%;
+  color: var(--color-timeline);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  z-index: 10000;
+  transition: var(--transition-base);
+  box-shadow: 0 2px 8px rgba(79, 33, 132, 0.1);
+  outline: none;
+  opacity: 0.8;
+}
+
+.closeBtn:focus {
+  outline: none;
+}
+
+.closeBtn svg {
+  width: clamp(18px, 2.5vw, 24px);
+  height: clamp(18px, 2.5vw, 24px);
+  transition: var(--transition-base);
+  pointer-events: none;
+}
+
+.closeBtn:hover {
+  background: rgba(156, 114, 201, 0.15);
+  color: var(--color-primary-medium);
+  border-color: var(--color-timeline);
+  transform: rotate(90deg) scale(1.05);
+  box-shadow: 0 4px 16px rgba(79, 33, 132, 0.2);
+  opacity: 1;
+}
+
+.closeBtn:active {
+  transform: rotate(90deg) scale(1);
+  box-shadow: 0 2px 8px rgba(79, 33, 132, 0.15);
+}
+
+/* Typography */
+.modalContent h1 {
+  font-family: var(--font-outfit), var(--font-kumbh-sans), "Montserrat",
+    sans-serif;
+  font-size: var(--font-size-4xl);
+  font-weight: 900;
+  color: var(--color-primary-dark);
+  text-transform: uppercase;
+  letter-spacing: clamp(0.15em, 0.5vw, 0.25em);
+  text-align: center;
+  margin-bottom: var(--spacing-lg);
+  margin-top: var(--spacing-2xl);
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.05);
+  position: relative;
+  z-index: 1;
+}
+
+.modalContent h3 {
+  font-size: var(--font-size-xl);
+  font-weight: 700;
+  color: var(--color-primary-dark);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.modalContent p {
+  font-family: var(--font-outfit), var(--font-kumbh-sans), sans-serif;
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  line-height: 1.6;
+}
+
+/* Event Info */
+.eventInfo {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: clamp(2rem, 4vw, 3rem);
+  margin-bottom: var(--spacing-3xl);
+  flex-wrap: wrap;
+  position: relative;
+  z-index: 1;
+}
+
+.infoItem {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  color: var(--color-primary-medium);
+  font-family: var(--font-outfit), var(--font-kumbh-sans), "Montserrat",
+    sans-serif;
+  font-size: var(--font-size-base);
+  font-weight: 600;
+}
+
+.infoItem svg {
+  flex-shrink: 0;
+  stroke: var(--color-timeline);
+}
+
+.infoItem span {
+  white-space: nowrap;
+}
+
+/* Layout Components */
+.timelineWrapper {
+  max-width: var(--container-max-width);
+  margin: 0 auto;
+  position: relative;
+  z-index: 1;
+}
+
+.scheduleContainer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2xl);
+  width: 100%;
+  padding: var(--spacing-2xl) 0;
+  position: relative;
+}
+
+/* Central Vertical Timeline Bar */
+.bar {
+  display: block;
+  position: absolute;
+  left: 50%;
+  top: calc(var(--spacing-2xl) + 80px);
+  bottom: calc(var(--spacing-2xl) + 80px);
+  transform: translateX(-50%);
+  width: var(--timeline-width);
+  background: linear-gradient(
+    180deg,
+    var(--color-primary-dark) 0%,
+    var(--color-primary-medium) 30%,
+    var(--color-timeline) 60%,
+    #e6e6fa 100%
+  );
+  z-index: 1;
+}
+
+/* Timeline Item Container */
+.timelineItem {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100px;
+}
+
+/* Timeline Node */
+.timelineNode {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: var(--timeline-node-size);
+  height: var(--timeline-node-size);
+  background: var(--color-timeline);
+  z-index: 2;
+}
+
+/* Full Width Items */
+.timelineItem.fullWidth .elmntCard {
+  width: 90%;
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+.timelineItem.fullWidth .elmntCard.center {
+  flex-direction: column;
+  text-align: center;
+  border-radius: var(--radius-xl);
+  padding: var(--spacing-xl);
+  position: relative;
+  z-index: 4;
+}
+
+.timelineItem.fullWidth .eventDetails {
+  text-align: center;
+  padding: var(--spacing-md) 0 0 0;
+}
+
+.timelineItem.fullWidth:first-child {
+  margin-top: calc(var(--spacing-2xl) * -1);
+  padding-top: var(--spacing-2xl);
+}
+
+.timelineItem.fullWidth:last-child {
+  margin-bottom: calc(var(--spacing-2xl) * -1);
+  padding-bottom: var(--spacing-2xl);
+}
+
+/* Event Cards */
+.elmntCard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-md);
+  background: linear-gradient(135deg, #e8dffe 0%, #d3b7fb 75%, #be8ef7 100%);
+  border: 2px solid var(--color-white);
+  border-radius: var(--radius-full);
+  box-shadow: var(--shadow-md);
+  padding: var(--spacing-md) var(--spacing-lg);
+  width: 45%;
+  min-width: min(330px, 45%);
+  transition: var(--transition-base);
+  position: relative;
+  z-index: 3;
+}
+
+.elmntCard:hover {
+  box-shadow: var(--shadow-xl);
+  transform: translateY(-2px);
+  border-color: var(--color-timeline);
+}
+
+/* Card Positioning - Right Side */
+.elmntCard.right {
+  background: linear-gradient(135deg, #e8dffe 0%, #d3b7fb 75%, #be8ef7 100%);
+  flex-direction: row;
+  margin-left: auto;
+  margin-right: 2%;
+}
+
+/* Card Positioning - Left Side */
+.elmntCard.left {
+  background: linear-gradient(-135deg, #be8ef7 0%, #d3b7fb 25%, #e8dffe 100%);
+  flex-direction: row-reverse;
+  margin-right: auto;
+  margin-left: 2%;
+}
+
+/* Time Slot */
+.timeSlot {
+  border-radius: var(--radius-full);
+  background: var(--gradient-purple-lavender);
+  padding: var(--spacing-md) var(--spacing-lg);
+  color: var(--color-primary-dark);
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
+  text-align: center;
+  box-shadow: var(--shadow-sm);
+}
+
+.timeSlot h2,
+.timeSlot p {
+  margin: 0;
+  color: var(--color-primary-dark);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+}
+
+/* Event Details */
+.eventDetails {
+  flex: 1;
+  text-align: left;
+  padding: 0 var(--spacing-md);
+}
+
+.elmntCard.center .eventDetails {
+  text-align: center;
+}
+
+.eventTitle {
+  margin: 0 0 0.25rem 0;
+  color: var(--color-primary-medium);
+  font-size: var(--font-size-lg);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  line-height: 1.2;
+}
+
+.eventDetails p {
+  margin: 0;
+  color: var(--color-primary-dark);
+  font-size: var(--font-size-sm);
+  opacity: 0.9;
+  line-height: 1.4;
+}
+
+/* Responsive Design */
+@media (max-width: 1024px) {
+  .elmntCard {
+    width: 46%;
+  }
+
+  .elmntCard.right {
+    margin-right: 3%;
+  }
+
+  .elmntCard.left {
+    margin-left: 3%;
+  }
+}
+
+@media (max-width: 768px) {
+  .modalContent {
+    padding: var(--spacing-xl) var(--spacing-md);
+  }
+
+  .modalContent h1 {
+    font-size: var(--font-size-3xl);
+    letter-spacing: 0.1em;
+    margin-top: clamp(3rem, 8vw, 4rem);
+    margin-bottom: var(--spacing-lg);
+  }
+
+  .eventInfo {
+    gap: var(--spacing-lg);
+    margin-bottom: var(--spacing-2xl);
+  }
+
+  .infoItem {
+    font-size: var(--font-size-sm);
+  }
+
+  .infoItem svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .scheduleContainer {
+    padding: var(--spacing-xl) 0;
+    gap: var(--spacing-xl);
+  }
+
+  .bar {
+    display: none;
+  }
+
+  .timelineItem {
+    padding-left: 0;
+  }
+
+  .timelineNode {
+    display: none;
+  }
+
+  .elmntCard {
+    width: 100%;
+    margin: 0 !important;
+  }
+
+  .elmntCard.right,
+  .elmntCard.left {
+    flex-direction: row;
+  }
+
+  .elmntCard.left .eventDetails {
+    text-align: left;
+  }
+
+  .timelineItem.fullWidth {
+    padding-left: 0;
+  }
+
+  .timelineItem.fullWidth .elmntCard {
+    width: 100%;
+  }
+
+  .closeBtn {
+    top: clamp(1rem, 3vw, 1.5rem);
+    right: clamp(1rem, 3vw, 1.5rem);
+  }
+}
+
+@media (max-width: 480px) {
+  .scheduleModal {
+    --spacing-lg: 0.75rem;
+    --spacing-xl: 1rem;
+  }
+
+  .modalContent {
+    padding: var(--spacing-lg) var(--spacing-sm);
+  }
+
+  .modalContent h1 {
+    font-size: var(--font-size-2xl);
+    margin-top: clamp(2.5rem, 10vw, 3.5rem);
+    margin-bottom: var(--spacing-md);
+  }
+
+  .eventInfo {
+    flex-direction: column;
+    gap: var(--spacing-sm);
+    margin-bottom: var(--spacing-xl);
+  }
+
+  .infoItem {
+    font-size: var(--font-size-xs);
+  }
+
+  .infoItem svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .scheduleContainer {
+    padding: var(--spacing-md) 0;
+    gap: var(--spacing-lg);
+  }
+
+  .elmntCard {
+    padding: var(--spacing-md);
+    flex-direction: column !important;
+    text-align: center;
+    border-radius: var(--radius-xl);
+  }
+
+  .eventDetails {
+    text-align: center !important;
+    padding: var(--spacing-sm) 0 !important;
+  }
+
+  .timeSlot {
+    padding: var(--spacing-sm) var(--spacing-md);
+    width: 100%;
+  }
+
+  .closeBtn {
+    top: clamp(0.75rem, 2vw, 1rem);
+    right: clamp(0.75rem, 2vw, 1rem);
+    width: clamp(36px, 8vw, 42px);
+    height: clamp(36px, 8vw, 42px);
+  }
+
+  .closeBtn svg {
+    width: clamp(16px, 4vw, 20px);
+    height: clamp(16px, 4vw, 20px);
+  }
+}
