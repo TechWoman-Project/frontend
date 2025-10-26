@@ -32,7 +32,8 @@ body {
   align-items: center;
   position: relative;
   overflow-x: hidden;
-  font-family: "Inter", system-ui, sans-serif;
+  font-family: var(--font-outfit), var(--font-kumbh-sans), system-ui,
+    -apple-system, sans-serif;
 }
 
 /* Desktop background for PC/tablets (768px and above) */

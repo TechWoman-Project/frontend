@@ -191,15 +191,9 @@ export default function QuizPage() {
         }
         await fetchQuestions(true);
       } else {
-        // Clear invalid stored name and prompt for new one
+        // Clear invalid stored name and stop loading to show UI prompt
         localStorage.removeItem("quiz_username");
-        setLoading(false); // Stop loading to show name prompt
-        // Automatically trigger the name prompt
-        setTimeout(() => {
-          if (ensureUserName()) {
-            fetchQuestions(true);
-          }
-        }, 100); // Small delay to ensure component is mounted
+        setLoading(false);
       }
     };
 
@@ -348,19 +342,40 @@ export default function QuizPage() {
     setTimeout(() => handleNext(), delay);
   };
 
-  // If no username, show name prompt before quiz loads
+  // If no username, show name prompt UI with button
   if (!userName) {
     return (
       <div className={styles.globalContainer}>
         <Header />
-        <Logo />
+        {/* <Logo /> */}
         <div
           className={styles.content}
           style={{ alignItems: "center", justifyContent: "center" }}
         >
           <div className={styles.questionContainer}>
-            Préparation du quiz... Veuillez entrer votre nom complet pour
-            continuer.
+            <p style={{ marginBottom: "1.5rem", textAlign: "center" }}>
+              Veuillez entrer votre nom complet pour commencer le quiz.
+            </p>
+            <button
+              onClick={() => {
+                if (ensureUserName()) {
+                  fetchQuestions(true);
+                }
+              }}
+              style={{
+                background: "#8f7ea1",
+                padding: "0.75rem 2rem",
+                border: "none",
+                borderRadius: "15px",
+                cursor: "pointer",
+                color: "white",
+                fontSize: "1rem",
+                fontWeight: "600",
+                width: "100%",
+              }}
+            >
+              Entrer votre nom
+            </button>
           </div>
         </div>
         <Footer />
