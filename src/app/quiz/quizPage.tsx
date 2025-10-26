@@ -388,7 +388,7 @@ export default function QuizPage() {
     return (
       <div className={styles.globalContainer}>
         <Header />
-        <Logo />
+        {/* <Logo /> */}
         <div
           className={styles.content}
           style={{ alignItems: "center", justifyContent: "center" }}
