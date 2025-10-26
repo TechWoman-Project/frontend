@@ -3,8 +3,9 @@
   height: 100dvh;
   max-height: 100dvh;
   padding: 20px 16px 10px 16px;
-  background: url("/phoneBg.svg") no-repeat center center fixed;
+  background: url("/phoneBg.svg?v=2") no-repeat center center fixed;
   background-size: cover;
+  background-attachment: fixed;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
   display: flex;
   flex-direction: column;
@@ -20,7 +21,7 @@
 /* Desktop background for larger screens */
 @media (min-width: 768px) {
   .globalContainer {
-    background: url("/fbArtboard1.svg") no-repeat center center fixed;
+    background: url("/fbArtboard1.svg?v=2") no-repeat center center fixed;
     background-size: cover;
   }
 }

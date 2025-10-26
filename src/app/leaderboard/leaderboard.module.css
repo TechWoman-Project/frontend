@@ -2,8 +2,9 @@
 .container {
   --textColor: black;
   min-height: 100vh;
-  background: url("/phoneBg.svg") no-repeat center center fixed;
+  background: url("/phoneBg.svg?v=2") no-repeat center center fixed;
   background-size: cover;
+  background-attachment: fixed;
   display: flex;
   flex-direction: column;
 }
@@ -11,7 +12,7 @@
 /* Desktop background for PC/tablets (768px and above) */
 @media (min-width: 768px) {
   .container {
-    background: url("/fbArtboard1.svg") no-repeat center center fixed;
+    background: url("/fbArtboard1.svg?v=2") no-repeat center center fixed;
     background-size: cover;
   }
 }
