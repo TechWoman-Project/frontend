@@ -2,6 +2,7 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import styles from "./quiz.module.css";
 import Logo from "@/components/Logo";
+import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { supabase } from "@/lib/supabase";
 
@@ -351,8 +352,12 @@ export default function QuizPage() {
   if (!userName) {
     return (
       <div className={styles.globalContainer}>
+        <Header />
         <Logo />
-        <div className={styles.content}>
+        <div
+          className={styles.content}
+          style={{ alignItems: "center", justifyContent: "center" }}
+        >
           <div className={styles.questionContainer}>
             Préparation du quiz... Veuillez entrer votre nom complet pour
             continuer.
@@ -367,8 +372,12 @@ export default function QuizPage() {
   if (!showResult && (loading || fetchError || QUESTIONS.length === 0)) {
     return (
       <div className={styles.globalContainer}>
+        <Header />
         <Logo />
-        <div className={styles.content}>
+        <div
+          className={styles.content}
+          style={{ alignItems: "center", justifyContent: "center" }}
+        >
           <div className={styles.questionContainer}>
             {fetchError ? fetchError : "Chargement des questions..."}
           </div>
@@ -381,8 +390,12 @@ export default function QuizPage() {
 
   return (
     <div className={styles.globalContainer}>
-      <Logo />
-      <div className={styles.content}>
+      <Header />
+      {/* <Logo /> */}
+      <div
+        className={styles.content}
+        style={{ alignItems: "center", justifyContent: "center" }}
+      >
         {!showResult && (
           <>
             <div className={styles.progressContainer}>

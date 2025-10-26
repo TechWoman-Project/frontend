@@ -2,6 +2,7 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import styles from "../quiz/quiz.module.css"; // reuse quiz styling
 import Logo from "@/components/Logo";
+import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { supabase } from "@/lib/supabase";
 import RealtimeStatus from "@/components/RealtimeStatus";
@@ -244,10 +245,24 @@ export default function VotePage() {
   if (!participantId) {
     return (
       <div className={styles.globalContainer}>
+        <Header />
         <RealtimeStatus />
-        <Logo />
-        <div className={styles.content}>
-          <div className={styles.questionContainer}>Initialisation...</div>
+        {/* <Logo /> */}
+        <div
+          className={styles.content}
+          style={{
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <div
+            className={styles.questionContainer}
+            style={{
+              textAlign: "center",
+            }}
+          >
+            Initialisation...
+          </div>
         </div>
         <Footer />
       </div>
@@ -257,10 +272,23 @@ export default function VotePage() {
   if (loading || fetchError || opinions.length === 0) {
     return (
       <div className={styles.globalContainer}>
+        <Header />
         <RealtimeStatus />
-        <Logo />
-        <div className={styles.content}>
-          <div className={styles.questionContainer}>
+        {/* <Logo /> */}
+        <div
+          className={styles.content}
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <div
+            className={styles.questionContainer}
+            style={{
+              textAlign: "center",
+            }}
+          >
             {fetchError ? fetchError : "Chargement des opinions..."}
           </div>
         </div>
@@ -271,9 +299,16 @@ export default function VotePage() {
 
   return (
     <div className={styles.globalContainer}>
+      <Header />
       <RealtimeStatus />
-      <Logo />
-      <div className={styles.content}>
+      {/* <Logo /> */}
+      <div
+        className={styles.content}
+        style={{
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
         {!showResult && current && (
           <>
             <div className={styles.questionContainer}>{current.opinion}</div>
@@ -295,6 +330,9 @@ export default function VotePage() {
                       (e.key === "Enter" || e.key === " ") && handleSelect(idx)
                     }
                     aria-pressed={isSelected}
+                    style={{
+                      textAlign: "center",
+                    }}
                   >
                     {text}
                   </div>

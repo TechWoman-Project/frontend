@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
 import Logo from "@/components/Logo";
+import Header from "@/components/Header";
 import quizStyles from "@/app/quiz/quiz.module.css";
 import Footer from "@/components/Footer";
 
@@ -10,19 +11,10 @@ import Footer from "@/components/Footer";
 export default function StartQuizzPage() {
   return (
     <div className={quizStyles.globalContainer}>
-      <div
-        className={quizStyles.content}
-        style={{ justifyContent: "space-between" }}
-      >
-        <Logo />
-        <div style={{ textAlign: "center" }}>
-          <img
-            src="/assets/quizTime.png"
-            alt="Quiz Time"
-            width={300}
-            height={200}
-          />
-        </div>
+      <Header />
+      <div className={quizStyles.content} style={{ justifyContent: "center" }}>
+        {/* <Logo />       */}
+
         <div
           style={{
             display: "flex",
@@ -31,6 +23,14 @@ export default function StartQuizzPage() {
             alignItems: "center",
           }}
         >
+          <div style={{ textAlign: "center" }}>
+            <img
+              src="/assets/quizTime.png"
+              alt="Quiz Time"
+              width="300"
+              height="200"
+            />
+          </div>
           <div>
             <Link
               href="/quiz"

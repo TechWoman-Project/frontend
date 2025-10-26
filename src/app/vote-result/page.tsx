@@ -1,23 +1,177 @@
 "use client";
-import { useEffect, useState, useCallback, useRef, memo } from "react";
+import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { supabase } from "@/lib/supabase";
 import styles from "../quiz/quiz.module.css";
 import Logo from "@/components/Logo";
+import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import RealtimeStatus from "@/components/RealtimeStatus";
 import RealtimeTest from "@/components/RealtimeTest";
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+} from "chart.js";
+import { Bar } from "react-chartjs-2";
+
+// Register Chart.js components
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend
+);
 
 interface OpinionResultOption {
   id: string;
   text: string;
   votes: number;
 }
+
 interface OpinionResult {
   quizId: string;
   opinion: string;
   totalVotes: number;
   options: OpinionResultOption[];
 }
+
+// Chart.js Bar Component
+const VoteChart = ({
+  options,
+  totalVotes,
+}: {
+  options: OpinionResultOption[];
+  totalVotes: number;
+}) => {
+  const chartRef = useRef<ChartJS<"bar"> | null>(null);
+
+  // Memoize chart data to prevent unnecessary re-renders
+  const chartData = useMemo(
+    () => ({
+      labels: options.map((option) => option.text),
+      datasets: [
+        {
+          label: "Votes",
+          data: options.map((option) => option.votes),
+          backgroundColor: [
+            "rgba(61, 17, 106, 1)",
+            "rgba(61, 17, 106, 1)",
+            "rgba(61, 17, 106, 1)",
+          ],
+          borderColor: [
+            "rgba(61, 17, 106, 1)",
+            "rgba(61, 17, 106, 1)",
+            "rgba(61, 17, 106, 1)",
+            "rgba(61, 17, 106, 1)",
+            "rgba(61, 17, 106, 1)",
+          ],
+          borderWidth: 2,
+          borderRadius: 8,
+          borderSkipped: false,
+        },
+      ],
+    }),
+    [options]
+  );
+
+  // Chart.js options
+  const chartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        display: false,
+      },
+      title: {
+        display: false,
+      },
+      tooltip: {
+        backgroundColor: "rgba(0, 0, 0, 0.8)",
+        titleColor: "white",
+        bodyColor: "white",
+        borderColor: "rgba(124, 58, 237, 0.8)",
+        borderWidth: 1,
+        callbacks: {
+          label: function (context: { parsed: { y: number } }) {
+            const votes = context.parsed.y;
+            const percentage =
+              totalVotes > 0 ? Math.round((votes / totalVotes) * 100) : 0;
+            return `${votes} vote${votes !== 1 ? "s" : ""} (${percentage}%)`;
+          },
+        },
+      },
+    },
+    scales: {
+      y: {
+        beginAtZero: true,
+        grid: {
+          color: "rgba(255, 255, 255, 0.1)",
+        },
+        ticks: {
+          color: "rgba(255, 255, 255, 0.7)",
+          stepSize: 1,
+          callback: function (value: string | number) {
+            return Number.isInteger(value) ? value : "";
+          },
+        },
+        title: {
+          display: true,
+          text: "Number of Votes",
+          color: "rgba(255, 255, 255, 0.7)",
+          font: {
+            size: 12,
+          },
+        },
+      },
+      x: {
+        grid: {
+          color: "rgba(255, 255, 255, 0.1)",
+        },
+        ticks: {
+          color: "rgba(255, 255, 255, 0.7)",
+          maxRotation: 45,
+          minRotation: 0,
+        },
+      },
+    },
+    animation: {
+      duration: 750,
+      easing: "easeInOutQuart" as const,
+    },
+    interaction: {
+      intersect: false,
+      mode: "index" as const,
+    },
+  };
+
+  useEffect(() => {
+    if (chartRef.current) {
+      chartRef.current.data = chartData;
+      chartRef.current.update("active");
+    }
+  }, [chartData]);
+
+  return (
+    <div
+      style={{
+        height: "300px",
+        marginBottom: "1rem",
+        padding: "1rem",
+        backgroundColor: "rgba(45, 30, 64, 0.3)",
+        borderRadius: "12px",
+        border: "1px solid rgba(124, 58, 237, 0.2)",
+      }}
+    >
+      <Bar ref={chartRef} data={chartData} options={chartOptions} />
+    </div>
+  );
+};
 
 export default function VoteResultPage() {
   const [results, setResults] = useState<OpinionResult[]>([]);
@@ -27,76 +181,6 @@ export default function VoteResultPage() {
   const [isUpdating, setIsUpdating] = useState(false);
   const initialized = useRef(false);
   const [rtConnected, setRtConnected] = useState(false);
-
-  // ---- VoteBar component (memoized) ----
-  const VoteBar = memo(function VoteBar({
-    option,
-    totalVotes,
-  }: {
-    option: OpinionResultOption;
-    totalVotes: number;
-  }) {
-    const pct = totalVotes ? (option.votes / totalVotes) * 100 : 0;
-    // Smooth count animation (lightweight)
-    const [displayVotes, setDisplayVotes] = useState(option.votes);
-    const prevVotesRef = useRef(option.votes);
-    useEffect(() => {
-      if (option.votes === prevVotesRef.current) return;
-      const start = prevVotesRef.current;
-      const end = option.votes;
-      const diff = end - start;
-      const startTs = performance.now();
-      const dur = 500;
-      let raf: number;
-      const step = (ts: number) => {
-        const p = Math.min(1, (ts - startTs) / dur);
-        const eased = 1 - Math.pow(1 - p, 3);
-        setDisplayVotes(Math.round(start + diff * eased));
-        if (p < 1) raf = requestAnimationFrame(step);
-      };
-      raf = requestAnimationFrame(step);
-      prevVotesRef.current = option.votes;
-      return () => cancelAnimationFrame(raf);
-    }, [option.votes]);
-    return (
-      <div style={{ marginBottom: "0.6rem" }}>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            fontSize: "0.85rem",
-            marginBottom: 4,
-          }}
-        >
-          <span>{option.text}</span>
-          <span>
-            {displayVotes} vote{displayVotes !== 1 ? "s" : ""} •{" "}
-            {Math.round(pct)}%
-          </span>
-        </div>
-        <div
-          style={{
-            background: "#2d1e40",
-            borderRadius: 8,
-            height: 12,
-            overflow: "hidden",
-            position: "relative",
-          }}
-          aria-label={`${option.text} ${Math.round(pct)}%`}
-        >
-          <div
-            style={{
-              width: pct + "%",
-              background: "linear-gradient(90deg,#7c3aed,#6d28d9)",
-              height: "100%",
-              transition: "width 0.65s cubic-bezier(.4,0,.2,1)",
-              boxShadow: "0 0 4px rgba(124,58,237,.6)",
-            }}
-          />
-        </div>
-      </div>
-    );
-  });
 
   const buildInitial = useCallback(async () => {
     try {
@@ -297,7 +381,8 @@ export default function VoteResultPage() {
   if (loading) {
     return (
       <div className={styles.globalContainer}>
-        <Logo />
+        <Header />
+        {/* <Logo /> */}
         <div className={styles.content}>
           <div className={styles.questionContainer}>
             Chargement des résultats...
@@ -310,7 +395,8 @@ export default function VoteResultPage() {
   if (error) {
     return (
       <div className={styles.globalContainer}>
-        <Logo />
+        <Header />
+        {/* <Logo /> */}
         <div className={styles.content}>
           <div className={styles.questionContainer}>{error}</div>
         </div>
@@ -323,8 +409,9 @@ export default function VoteResultPage() {
   if (!rtConnected) {
     return (
       <div className={styles.globalContainer}>
+        <Header />
         <RealtimeStatus />
-        <Logo />
+        {/* <Logo /> */}
         <div className={styles.content}>
           <div className={styles.questionContainer}>
             Connexion temps réel...
@@ -337,9 +424,10 @@ export default function VoteResultPage() {
 
   return (
     <div className={styles.globalContainer}>
+      <Header />
       <RealtimeStatus />
       <RealtimeTest />
-      <Logo />
+      {/* <Logo /> */}
       <div className={styles.content}>
         <div
           style={{
@@ -371,12 +459,10 @@ export default function VoteResultPage() {
         )}
         {results.map((r) => (
           <div key={r.quizId} style={{ width: "100%", marginBottom: "2rem" }}>
-            <h2 style={{ fontSize: "1.1rem", marginBottom: "0.5rem" }}>
+            <h2 style={{ fontSize: "2.5rem", textAlign: "center", marginBottom: "0.5rem" }}>
               {r.opinion}
             </h2>
-            {r.options.map((o) => (
-              <VoteBar key={o.id} option={o} totalVotes={r.totalVotes} />
-            ))}
+            <VoteChart options={r.options} totalVotes={r.totalVotes} />
             <div style={{ fontSize: "0.65rem", opacity: 0.65, marginTop: 4 }}>
               {r.totalVotes} vote{r.totalVotes !== 1 ? "s" : ""} au total
             </div>

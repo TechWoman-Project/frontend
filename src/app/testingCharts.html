@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+    <link
+      href="https://unpkg.com/singledivui/dist/singledivui.min.css"
+      rel="stylesheet"
+    />
+    <style>
+      body {
+        padding: 10px 35px;
+        font-family: Verdana, Arial, sans-serif;
+      }
+      .row {
+        display: flex;
+      }
+      .cell {
+        padding: 0px 35px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>SingleDivUI</h1>
+    <div class="row">
+      <div class="cell">
+        <h2>Bar Chart</h2>
+        <div id="chart2"></div>
+      </div>
+    </div>
+  </body>
+  <script src="https://unpkg.com/singledivui/dist/singledivui.min.js"></script>
+  <script>
+    const { Chart } = SingleDivUI;
+
+    const options = {
+      data: {
+        labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul"],
+        series: {
+          points: [15, 9, 25, 18, 31, 25, 42],
+        },
+      },
+      height: 200,
+      width: 400,
+    };
+
+    new Chart("#chart2", {
+      type: "bar",
+      ...options,
+    });
+  </script>
+</html>

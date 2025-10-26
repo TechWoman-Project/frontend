@@ -2,10 +2,12 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import logo from "@/../public/assets/logo.png";
 import member1 from "@/../public/assets/members/member-1.png";
 import member2 from "@/../public/assets/members/member-2.png";
 import Footer from "./Footer";
+import Header from "./Header";
+import logoSponsor1 from "@/../public/assets/sponsorLogo1.png";
+import logoSponsor2 from "@/../public/assets/sponsorLogo2.png";
 
 export default function HomeLanding() {
   const trackRef = useRef<HTMLDivElement | null>(null);
@@ -30,13 +32,7 @@ export default function HomeLanding() {
 
   return (
     <div className="tw-globalContainer">
-      <header className="tw-header">
-        <div className="tw-slogan">
-          <h2>Bienvenu à</h2>
-          <p>L&apos;innovation au féminin, vers un futur audacieux</p>
-        </div>
-        <Image src={logo} alt="Tech Woman Logo" className="tw-logo" />
-      </header>
+      <Header />
 
       <section className="tw-slider-wrapper" aria-label="Team members slider">
         <div className="tw-slider-container" data-carousel>
@@ -55,42 +51,76 @@ export default function HomeLanding() {
         </div>
       </section>
 
-      <section className="tw-section">
-        <h2>Présentation de l’évènement</h2>
-        <p>
-          Tech Women 2025 est une initiative phare portée par le Méca Club –
-          USTHB, visant à mettre en lumière le rôle essentiel des femmes dans
-          les domaines techniques, scientifiques et industriels. Conçu comme un
-          événement à fort rayonnement intellectuel et sociétal, il ambitionne
-          de valoriser les compétences féminines, encourager la diversité dans
-          les filières d’avenir et renforcer les synergies entre le monde
-          académique, entrepreneurial et institutionnel. Organisé sur une
-          journée unique, Tech Women 2025 prendra la forme d’un salon
-          multidimensionnel, alliant conférences d’expertise, expositions
-          technologiques, présentations de projets innovants, ainsi que
-          workshops interactifs.
+      <section className="tw-section" style={{}}>
+        <h2
+          style={{
+            color: "#3D116A",
+          }}
+        >
+          TechWomen 2025 – l&apos;innovation au féminin, l’avenir en marche{" "}
+        </h2>
+        <p id="presentation-container">
+          <span>
+            Ici naissent les idées qui changent le monde. <br />
+          </span>
+          <span>
+            TechWomen 2025 célèbre la femme innovatrice, créatrice et
+            visionnaire, celle qui fait de la science et de la technologie un
+            moteur d’espoir et de progrès. <br />
+          </span>
+          <span>
+            En ce mois d’Octobre Rose, nous unissons la puissance de la
+            technologie et la valeur de la recherche médicale pour rappeler que
+            l’innovation peut aussi sauver des vies. <br />
+          </span>
+          <span>
+            Parce qu’innover, c’est croire en la vie.
+            <br />
+            Et qu’aucune révolution ne se fait sans elles.
+          </span>
         </p>
       </section>
 
-      <div className="tw-video-placeholder" aria-hidden="true" />
+      <div className="tw-video-placeholder">
+        <iframe
+          width="100%"
+          height="100%"
+          src="https://www.youtube.com/embed/m-6DVTqP_dE"
+          title="YouTube video player"
+          frameBorder="0"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+          allowFullScreen
+        />
+      </div>
 
       <div className="tw-buttons-center">
         <button className="tw-btn-primary">Programme</button>
       </div>
 
       <section className="tw-section">
-        <h2>Présentation de MecaClub</h2>
-        <p>
-          Meca club a pour objectifs inclure la promotion de l&apos;engagement
-          des étudiants dans le domaine de la mécanique en offrant des
-          opportunités d&apos;apprentissage pratique, de développement de
-          compétences techniques et de collaboration interdisciplinaire. Notre
-          club vise généralement à fournir un environnement où les étudiants
-          peuvent explorer divers aspects de la mécanique, y compris la
-          conception, la fabrication, l&apos;analyse et l&apos;optimisation de
-          systèmes mécaniques, et cela à travers la participation à des
-          compétitions, des projets de recherche appliquée et des initiatives de
-          service communautaire.
+        <h2
+          style={{
+            color: "#3D116A",
+          }}
+        >
+          Présentation de MecaClub
+        </h2>
+        <p id="presentation-container">
+          <span>
+            Meca club a pour objectifs inclure la promotion de l&apos;engagement
+            des étudiants dans le domaine de la mécanique en offrant des
+            opportunités d&apos;apprentissage pratique, de développement de
+            compétences techniques et de collaboration interdisciplinaire.
+            <br />
+          </span>
+          <span>
+            Notre club vise généralement à fournir un environnement où les
+            étudiants peuvent explorer divers aspects de la mécanique, y compris
+            la conception, la fabrication, l&apos;analyse et l&apos;optimisation
+            de systèmes mécaniques, et cela à travers la participation à des
+            compétitions, des projets de recherche appliquée et des initiatives
+            de service communautaire.
+          </span>
         </p>
       </section>
 
@@ -104,17 +134,47 @@ export default function HomeLanding() {
       </div>
 
       <section className="tw-section">
-        <h2>Nos Sponsors</h2>
-        <p>Merci à nos partenaires pour leur soutien !</p>
+        <h2
+          style={{
+            color: "#3D116A",
+          }}
+        >
+          Nos Sponsors
+        </h2>
+        <p id="presentation-container">
+          <span>Merci à nos partenaires pour leur soutien !</span>
+        </p>
       </section>
 
-      <div className="tw-sponsors-grid">
-        <div className="tw-sponsor"></div>
-        <div className="tw-sponsor"></div>
-        <div className="tw-sponsor"></div>
-        <div className="tw-sponsor"></div>
-        <div className="tw-sponsor"></div>
-        <div className="tw-sponsor"></div>
+      <div className="tw-sponsors-grid-aa">
+        <div
+          className="tw-sponsor-container"
+          style={{
+            backgroundImage: `url(${logoSponsor1})`,
+            backgroundSize: "contain",
+            backgroundRepeat: "no-repeat",
+            height: "100px",
+            width: "100px",
+          }}
+        >
+          <Image
+            src={logoSponsor1}
+            alt="Logo Sponsor 1"
+            // className="tw-sponsor-logo"
+          />
+        </div>
+        <div
+          className="tw-sponsor-container"
+          style={{
+            backgroundImage: `url(${logoSponsor1})`,
+            backgroundSize: "contain",
+            backgroundRepeat: "no-repeat",
+            height: "100px",
+            width: "100px",
+          }}
+        >
+          <Image src={logoSponsor2} alt="Logo Sponsor 2" />
+        </div>
       </div>
       <Footer />
     </div>

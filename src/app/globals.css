@@ -6,6 +6,8 @@ body {
   margin: 0;
   padding: 0;
   width: 100%;
+  font-family: var(--font-outfit), var(--font-kumbh-sans), system-ui,
+    -apple-system, sans-serif;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: none;
   -webkit-user-select: none;
@@ -19,7 +21,8 @@ body {
   margin: 0 auto;
   min-height: 100dvh;
   padding: 20px 16px 60px; /* leave room for sticky footer */
-  background-color: #d4c9f8;
+  background: url("/phoneBg.svg") no-repeat center center fixed;
+  background-size: cover;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -27,10 +30,19 @@ body {
   overflow-x: hidden;
   font-family: "Inter", system-ui, sans-serif;
 }
+
+/* Desktop background for PC/tablets (768px and above) */
+@media (min-width: 768px) {
+  .tw-globalContainer {
+    background: url("/fbArtboard1.svg") no-repeat center center fixed;
+    background-size: cover;
+  }
+}
+
 .tw-header {
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: space-between;
   gap: 32px;
   /* flex-wrap: wrap; */
   width: 100%;
@@ -69,7 +81,7 @@ body {
   max-width: 500px;
   position: relative;
   overflow: hidden;
-  border-radius: 20px;  
+  border-radius: 20px;
   /* box-shadow: 0 8px 32px rgba(0, 0, 0, 1), 0 4px 16px rgba(0, 0, 0, 0.2); */
 }
 .tw-slider-track {
@@ -147,28 +159,33 @@ body {
 }
 .tw-buttons-dual {
   display: flex;
-  gap: 20px;
-  flex-wrap: wrap;
-  justify-content: center;
+  /* gap: 20px; */
+  flex-wrap: nowrap;
+  justify-content: space-evenly;
   width: 100%;
   margin: 30px 0;
 }
 .tw-btn-primary,
 .tw-btn-secondary {
-  background: #6c63ff;
+  background: #3d116a;
   color: #fff;
   border: none;
   border-radius: 8px;
   padding: 10px 22px;
   cursor: pointer;
-  font-weight: 600;
-  font-size: 0.95rem;
+  font-weight: 500;
+  font-size: 0.7rem;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   transition: background 0.3s, transform 0.2s;
+  width: 40%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
 }
-.tw-btn-secondary {
+/* .tw-btn-secondary {
   background: #584fe0;
-}
+} */
 .tw-btn-primary:hover,
 .tw-btn-secondary:hover {
   background: #5a52e0;
@@ -203,7 +220,7 @@ body {
   }
 }
 @media (max-width: 640px) {
-  .tw-header {
+  .tw-tw-header {
     /* flex-direction: column-reverse; */
     text-align: center;
     gap: 18px;
@@ -239,7 +256,7 @@ body {
   justify-content: space-between;
   gap: 20px;
   background: transparent;
-  color: white !important;
+  color: #3d116a !important;
   font-size: 0.8rem;
   font-family: "Gill Sans", "Gill Sans MT", Calibri, "Trebuchet MS", sans-serif;
   z-index: 1000;
@@ -250,7 +267,7 @@ body {
 }
 .quiz-footer .social-media i {
   font-size: 25px;
-  color: white !important;
+  color: #3d116a !important;
   transition: opacity 0.3s ease;
 }
 .quiz-footer .social-media i:hover {
@@ -258,4 +275,32 @@ body {
 }
 .quiz-footer p {
   margin: 0;
+}
+
+#presentation-container {
+  text-align: center;
+  font-size: 18px;
+  line-height: 1.6;
+}
+
+#presentation-container span {
+  font-size: 15px;
+  color: #3d116a;
+  font-weight: bold;
+}
+
+Link[role="button"] {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tw-sponsors-grid-aa {
+  width: 100%;
+  background-color: white;
+  display: flex;
+  justify-content: space-evenly;
+  align-items: center;
+  padding: 15px;
+  border-radius: 16px;
 }
