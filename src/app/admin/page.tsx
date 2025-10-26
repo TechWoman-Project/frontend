@@ -95,9 +95,7 @@ export default function AdminPage() {
 
       const { data: quizzesData, error: quizzesError } = await supabase
         .from("quizzes")
-        .select(
-          "id, question, kind, status, starts_at, ends_at, created_at"
-        )
+        .select("id, question, kind, status, starts_at, ends_at, created_at")
         .order("created_at", { ascending: false });
 
       if (quizzesError) throw quizzesError;
@@ -177,14 +175,12 @@ export default function AdminPage() {
       >();
 
       (scoresData as ScoreRow[] | null)?.forEach((score) => {
-        const existing =
-          scoreStats.get(score.quiz_id) ||
-          {
-            totalParticipants: 0,
-            correctCount: 0,
-            incorrectCount: 0,
-            users: new Set<string>(),
-          };
+        const existing = scoreStats.get(score.quiz_id) || {
+          totalParticipants: 0,
+          correctCount: 0,
+          incorrectCount: 0,
+          users: new Set<string>(),
+        };
 
         if (!existing.users.has(score.user_name)) {
           existing.users.add(score.user_name);
@@ -203,11 +199,10 @@ export default function AdminPage() {
       >();
 
       (votesData as VoteRow[] | null)?.forEach((vote) => {
-        const existing =
-          voteStats.get(vote.quiz_id) || {
-            totalVotes: 0,
-            perOption: {} as Record<string, number>,
-          };
+        const existing = voteStats.get(vote.quiz_id) || {
+          totalVotes: 0,
+          perOption: {} as Record<string, number>,
+        };
         existing.totalVotes += 1;
         existing.perOption[vote.option_id] =
           (existing.perOption[vote.option_id] || 0) + 1;
@@ -227,7 +222,9 @@ export default function AdminPage() {
 
           optionsWithCounts = baseOptions.map((option) => ({
             ...option,
-            participant_count: option.is_correct ? correctCount : incorrectCount,
+            participant_count: option.is_correct
+              ? correctCount
+              : incorrectCount,
           }));
         } else {
           const stats = voteStats.get(quiz.id);
