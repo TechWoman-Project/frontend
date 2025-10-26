@@ -264,13 +264,20 @@ export default function VoteResultPage() {
         .select("id, question, status, kind")
         .eq("id", quizId)
         .single();
-      if (
-        qErr ||
-        !quizRow ||
-        quizRow.kind !== "opinion" ||
-        quizRow.status !== "active"
-      )
+      
+      // If quiz doesn't exist, has error, or wrong kind - remove it
+      if (qErr || !quizRow || quizRow.kind !== "opinion") {
+        setResults((prev) => prev.filter((q) => q.quizId !== quizId));
         return;
+      }
+
+      // If quiz is not active (draft or closed) - remove it from display
+      if (quizRow.status !== "active") {
+        setResults((prev) => prev.filter((q) => q.quizId !== quizId));
+        return;
+      }
+
+      // Quiz is active - add or update it
       const { data: opts } = await supabase
         .from("options")
         .select("id, text, votes_cached")
@@ -285,12 +292,14 @@ export default function VoteResultPage() {
       setResults((prev) => {
         const exists = prev.some((q) => q.quizId === quizRow.id);
         if (exists) {
+          // Update existing quiz
           return prev.map((q) =>
             q.quizId === quizRow.id
               ? { ...q, opinion: quizRow.question, totalVotes, options }
               : q
           );
         }
+        // Add new quiz
         return [
           ...prev,
           {
@@ -301,6 +310,9 @@ export default function VoteResultPage() {
           },
         ];
       });
+      setLastUpdate(new Date());
+      setIsUpdating(true);
+      setTimeout(() => setIsUpdating(false), 400);
     } catch (e) {
       console.error("Failed to add/refresh quiz", e);
     }
