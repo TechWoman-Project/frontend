@@ -16,8 +16,8 @@ interface QuizQuestion {
   time?: number; // optional per-question time
 }
 
-const TOTAL_TIME = 60; // fallback total quiz time if per-question not specified
-const ANSWER_TIME = 100; // keep original visual timing unless changed per question
+const TOTAL_TIME = 30; // fallback total quiz time if per-question not specified
+const ANSWER_TIME = 30; // time per question in seconds
 const POINTS_PER_QUESTION = 10; // fixed score per correct answer
 
 // NOTE: We remove mock data and will populate dynamically from Supabase while
@@ -88,7 +88,7 @@ export default function QuizPage() {
           setShowResult(false);
           setLocked(false);
           setScore(0);
-          setQuestionTimeLeft(built[0]?.time ?? TOTAL_TIME);
+          setQuestionTimeLeft(built[0]?.time ?? ANSWER_TIME);
         } else {
           // Preserve current question if it still exists
           setCurrentIndex((prevIdx) => {
@@ -113,7 +113,7 @@ export default function QuizPage() {
             const prevQuizId = QUESTIONS[currentIndex]?.quizId;
             const newIdx = built.findIndex((q) => q.quizId === prevQuizId);
             if (newIdx === -1) {
-              return built[0]?.time ?? TOTAL_TIME;
+              return built[0]?.time ?? ANSWER_TIME;
             }
             return prevTime; // keep remaining time for continuity
           });
@@ -254,17 +254,12 @@ export default function QuizPage() {
     []
   );
 
-  // Timer effect for per-question timer (same behavior)
+  // Handle moving to next question or completing quiz
   const handleNext = useCallback(() => {
-    setLocked(false);
-    setSelectedIndex(null);
-    if (currentIndex + 1 < QUESTIONS.length) {
-      const nextIndex = currentIndex + 1;
-      setCurrentIndex(nextIndex);
-      const nxt = QUESTIONS[nextIndex];
-      setQuestionTimeLeft(nxt?.time ?? TOTAL_TIME);
-    } else {
-      // Quiz completed - insert final score
+    const isLastQuestion = currentIndex + 1 >= QUESTIONS.length;
+
+    if (isLastQuestion) {
+      // Quiz completed - insert final score and show results
       if (userName) {
         insertFinalScore(userName, score);
       }
@@ -272,17 +267,30 @@ export default function QuizPage() {
       try {
         localStorage.setItem(COMPLETION_KEY, "1");
       } catch {}
+    } else {
+      // Move to next question
+      setLocked(false);
+      setSelectedIndex(null);
+      const nextIndex = currentIndex + 1;
+      setCurrentIndex(nextIndex);
+      setQuestionTimeLeft(QUESTIONS[nextIndex]?.time ?? ANSWER_TIME);
     }
   }, [currentIndex, QUESTIONS, userName, score, insertFinalScore]);
 
+  // Timer countdown effect
   useEffect(() => {
     if (showResult || !currentQuestion) return;
+
     if (questionTimeLeft <= 0) {
-      handleNext(); // unanswered auto-advance
+      handleNext(); // Time's up - move to next or finish
       return;
     }
-    const id = setInterval(() => setQuestionTimeLeft((t) => t - 1), 1000);
-    return () => clearInterval(id);
+
+    const timerId = setInterval(() => {
+      setQuestionTimeLeft((prev) => prev - 1);
+    }, 1000);
+
+    return () => clearInterval(timerId);
   }, [questionTimeLeft, showResult, currentQuestion, handleNext]);
 
   const progressPercent = (questionTimeLeft / perQuestionTime) * 100;
@@ -325,21 +333,23 @@ export default function QuizPage() {
 
       if (error) throw error;
 
-      if (options && options[idx]) {
+      if (options?.[idx]) {
         // Insert vote into database (for tracking individual answers)
         await insertVote(currentQuestion.quizId, options[idx].id, userName);
 
         // Update local score if correct (will be saved at end)
         if (idx === currentQuestion.correctIndex) {
-          setScore((s) => s + POINTS_PER_QUESTION);
+          setScore((prev) => prev + POINTS_PER_QUESTION);
         }
       }
     } catch (err) {
       console.error("Error handling vote:", err);
     }
 
-    const delay = currentIndex + 1 === QUESTIONS.length ? 1200 : 900;
-    setTimeout(() => handleNext(), delay);
+    // Short delay before moving to next question or showing results
+    const isLastQuestion = currentIndex + 1 >= QUESTIONS.length;
+    const delay = isLastQuestion ? 1200 : 900;
+    setTimeout(handleNext, delay);
   };
 
   // If no username, show name prompt UI with button
@@ -450,7 +460,12 @@ export default function QuizPage() {
               </span>
             </div>
              */}
-            <div className={styles.questionContainer}>
+            <div
+              className={styles.questionContainer}
+              style={{
+               
+              }}
+            >
               {currentQuestion.question}
             </div>
             <div className={styles.answers}>
