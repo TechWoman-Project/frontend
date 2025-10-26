@@ -93,102 +93,157 @@ export default function AdminPage() {
       setLoading(true);
       console.log("Fetching quizzes...");
 
-      // Fetch quizzes
       const { data: quizzesData, error: quizzesError } = await supabase
         .from("quizzes")
-        .select("*")
+        .select(
+          "id, question, kind, status, starts_at, ends_at, created_at"
+        )
         .order("created_at", { ascending: false });
 
       if (quizzesError) throw quizzesError;
 
-      console.log("Quizzes fetched:", quizzesData?.length || 0);
-
-      // Fetch options for each quiz
-      const quizzesWithOptions: QuizWithOptions[] = [];
-
-      for (const quiz of quizzesData || []) {
-        const { data: optionsData, error: optionsError } = await supabase
-          .from("options")
-          .select("*")
-          .eq("quiz_id", quiz.id)
-          .order("order_index");
-
-        if (optionsError) throw optionsError;
-
-        let enrichedOptions = optionsData || [];
-        let totalParticipants = 0;
-
-        // For quiz questions, count participants from scores table
-        if (quiz.kind === "quiz") {
-          const { data: scoresData, error: scoresError } = await supabase
-            .from("scores")
-            .select("user_name, points, quiz_id")
-            .eq("quiz_id", quiz.id);
-
-          if (scoresError) {
-            console.error("Error fetching scores:", scoresError);
-          } else if (scoresData) {
-            // Count unique participants
-            totalParticipants = scoresData.length;
-
-            // Count how many people selected each option (correct vs incorrect answers)
-            enrichedOptions = enrichedOptions.map((option) => {
-              if (option.is_correct) {
-                // Count users who got points (correct answers)
-                const correctCount = scoresData.filter(
-                  (score) => score.points > 0
-                ).length;
-                return { ...option, participant_count: correctCount };
-              } else {
-                // Count users who got 0 points (incorrect answers)
-                // For simplicity, we assume one wrong answer per user
-                const incorrectCount = scoresData.filter(
-                  (score) => score.points === 0
-                ).length;
-                return { ...option, participant_count: incorrectCount };
-              }
-            });
-          }
-        }
-        // For opinion polls, count actual votes from votes table
-        else if (quiz.kind === "opinion") {
-          // Fetch actual vote counts from votes table for each option
-          const optionIds = enrichedOptions.map((opt) => opt.id);
-          if (optionIds.length > 0) {
-            const { data: votesData, error: votesError } = await supabase
-              .from("votes")
-              .select("option_id, quiz_id")
-              .eq("quiz_id", quiz.id)
-              .in("option_id", optionIds);
-
-            if (votesError) {
-              console.error("Error fetching votes:", votesError);
-            } else if (votesData) {
-              // Count votes for each option
-              const voteCounts: Record<string, number> = {};
-              votesData.forEach((vote) => {
-                voteCounts[vote.option_id] =
-                  (voteCounts[vote.option_id] || 0) + 1;
-              });
-
-              // Update each option with actual vote count
-              enrichedOptions = enrichedOptions.map((option) => ({
-                ...option,
-                participant_count: voteCounts[option.id] || 0,
-              }));
-
-              // Total votes for this opinion poll
-              totalParticipants = votesData.length;
-            }
-          }
-        }
-
-        quizzesWithOptions.push({
-          ...quiz,
-          options: enrichedOptions,
-          total_participants: totalParticipants,
-        });
+      if (!quizzesData?.length) {
+        setQuizzes([]);
+        console.log("No quizzes found");
+        return;
       }
+
+      const quizIds = quizzesData.map((quiz) => quiz.id);
+      const quizIdsQuiz = quizzesData
+        .filter((quiz) => quiz.kind === "quiz")
+        .map((quiz) => quiz.id);
+      const quizIdsOpinion = quizzesData
+        .filter((quiz) => quiz.kind === "opinion")
+        .map((quiz) => quiz.id);
+
+      const optionsPromise = supabase
+        .from("options")
+        .select("id, quiz_id, text, order_index, votes_cached, is_correct")
+        .in("quiz_id", quizIds)
+        .order("order_index");
+
+      const scoresPromise =
+        quizIdsQuiz.length > 0
+          ? supabase
+              .from("scores")
+              .select("quiz_id, user_name, points")
+              .in("quiz_id", quizIdsQuiz)
+          : Promise.resolve({ data: [], error: null });
+
+      const votesPromise =
+        quizIdsOpinion.length > 0
+          ? supabase
+              .from("votes")
+              .select("quiz_id, option_id")
+              .in("quiz_id", quizIdsOpinion)
+          : Promise.resolve({ data: [], error: null });
+
+      const [
+        { data: optionsData, error: optionsError },
+        { data: scoresData, error: scoresError },
+        { data: votesData, error: votesError },
+      ] = await Promise.all([optionsPromise, scoresPromise, votesPromise]);
+
+      if (optionsError) throw optionsError;
+      if (scoresError) throw scoresError;
+      if (votesError) throw votesError;
+
+      type ScoreRow = {
+        quiz_id: string;
+        user_name: string;
+        points: number;
+      };
+      type VoteRow = {
+        quiz_id: string;
+        option_id: string;
+      };
+
+      const optionsByQuiz = new Map<string, Option[]>();
+      (optionsData || []).forEach((option) => {
+        if (!optionsByQuiz.has(option.quiz_id)) {
+          optionsByQuiz.set(option.quiz_id, []);
+        }
+        optionsByQuiz.get(option.quiz_id)!.push(option as Option);
+      });
+
+      const scoreStats = new Map<
+        string,
+        {
+          totalParticipants: number;
+          correctCount: number;
+          incorrectCount: number;
+          users: Set<string>;
+        }
+      >();
+
+      (scoresData as ScoreRow[] | null)?.forEach((score) => {
+        const existing =
+          scoreStats.get(score.quiz_id) ||
+          {
+            totalParticipants: 0,
+            correctCount: 0,
+            incorrectCount: 0,
+            users: new Set<string>(),
+          };
+
+        if (!existing.users.has(score.user_name)) {
+          existing.users.add(score.user_name);
+          existing.totalParticipants += 1;
+        }
+
+        if (score.points > 0) existing.correctCount += 1;
+        else existing.incorrectCount += 1;
+
+        scoreStats.set(score.quiz_id, existing);
+      });
+
+      const voteStats = new Map<
+        string,
+        { totalVotes: number; perOption: Record<string, number> }
+      >();
+
+      (votesData as VoteRow[] | null)?.forEach((vote) => {
+        const existing =
+          voteStats.get(vote.quiz_id) || {
+            totalVotes: 0,
+            perOption: {} as Record<string, number>,
+          };
+        existing.totalVotes += 1;
+        existing.perOption[vote.option_id] =
+          (existing.perOption[vote.option_id] || 0) + 1;
+        voteStats.set(vote.quiz_id, existing);
+      });
+
+      const quizzesWithOptions: QuizWithOptions[] = quizzesData.map((quiz) => {
+        const baseOptions = optionsByQuiz.get(quiz.id) || [];
+        let totalParticipants = 0;
+        let optionsWithCounts = baseOptions;
+
+        if (quiz.kind === "quiz") {
+          const stats = scoreStats.get(quiz.id);
+          const correctCount = stats?.correctCount ?? 0;
+          const incorrectCount = stats?.incorrectCount ?? 0;
+          totalParticipants = stats?.totalParticipants ?? 0;
+
+          optionsWithCounts = baseOptions.map((option) => ({
+            ...option,
+            participant_count: option.is_correct ? correctCount : incorrectCount,
+          }));
+        } else {
+          const stats = voteStats.get(quiz.id);
+          totalParticipants = stats?.totalVotes ?? 0;
+          optionsWithCounts = baseOptions.map((option) => ({
+            ...option,
+            participant_count: stats?.perOption[option.id] ?? 0,
+          }));
+        }
+
+        return {
+          ...quiz,
+          options: optionsWithCounts,
+          total_participants: totalParticipants,
+        } as QuizWithOptions;
+      });
 
       setQuizzes(quizzesWithOptions);
       console.log("All quizzes with options loaded successfully");

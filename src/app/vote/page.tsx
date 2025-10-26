@@ -58,23 +58,38 @@ export default function VotePage() {
         if (qErr) throw qErr;
         const built: Opinion[] = [];
         if (quizzes?.length) {
-          for (let i = 0; i < quizzes.length; i++) {
-            const quiz = quizzes[i];
-            const { data: opts, error: oErr } = await supabase
-              .from("options")
-              .select("id, text, order_index")
-              .eq("quiz_id", quiz.id)
-              .order("order_index", { ascending: true });
-            if (oErr) throw oErr;
-            if (!opts || opts.length === 0) continue;
+          const quizIds = quizzes.map((quiz) => quiz.id);
+          const { data: optionsData, error: oErr } = await supabase
+            .from("options")
+            .select("id, text, order_index, quiz_id")
+            .in("quiz_id", quizIds)
+            .order("order_index", { ascending: true });
+          if (oErr) throw oErr;
+
+          const optionsByQuiz = new Map<
+            string,
+            { id: string; text: string; order_index: number }[]
+          >();
+
+          (optionsData || []).forEach((option) => {
+            if (!optionsByQuiz.has(option.quiz_id)) {
+              optionsByQuiz.set(option.quiz_id, []);
+            }
+            optionsByQuiz.get(option.quiz_id)!.push(option);
+          });
+
+          quizzes.forEach((quiz) => {
+            const quizOptions = optionsByQuiz.get(quiz.id) || [];
+            if (quizOptions.length === 0) return;
+
             built.push({
               id: built.length + 1,
               quizId: quiz.id,
               opinion: quiz.question,
-              options: opts.map((o) => o.text),
-              optionIds: opts.map((o) => o.id),
+              options: quizOptions.map((opt) => opt.text),
+              optionIds: quizOptions.map((opt) => opt.id),
             });
-          }
+          });
         }
         const pid = overridePid || participantId;
         // If we have a participant id, fetch their votes for these opinions to decide if they already completed all.
