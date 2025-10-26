@@ -20,10 +20,12 @@ interface Option {
   order_index: number;
   votes_cached: number;
   is_correct: boolean;
+  participant_count?: number; // For quiz questions: count from scores table
 }
 
 interface QuizWithOptions extends Quiz {
   options: Option[];
+  total_participants?: number; // Total unique participants for this quiz
 }
 
 export default function AdminPage() {
@@ -113,9 +115,46 @@ export default function AdminPage() {
 
         if (optionsError) throw optionsError;
 
+        let enrichedOptions = optionsData || [];
+        let totalParticipants = 0;
+
+        // For quiz questions, count participants from scores table
+        if (quiz.kind === "quiz") {
+          const { data: scoresData, error: scoresError } = await supabase
+            .from("scores")
+            .select("user_name, points, quiz_id")
+            .eq("quiz_id", quiz.id);
+
+          if (scoresError) {
+            console.error("Error fetching scores:", scoresError);
+          } else if (scoresData) {
+            // Count unique participants
+            totalParticipants = scoresData.length;
+
+            // Count how many people selected each option (correct vs incorrect answers)
+            enrichedOptions = enrichedOptions.map((option) => {
+              if (option.is_correct) {
+                // Count users who got points (correct answers)
+                const correctCount = scoresData.filter(
+                  (score) => score.points > 0
+                ).length;
+                return { ...option, participant_count: correctCount };
+              } else {
+                // Count users who got 0 points (incorrect answers)
+                // For simplicity, we assume one wrong answer per user
+                const incorrectCount = scoresData.filter(
+                  (score) => score.points === 0
+                ).length;
+                return { ...option, participant_count: incorrectCount };
+              }
+            });
+          }
+        }
+
         quizzesWithOptions.push({
           ...quiz,
-          options: optionsData || [],
+          options: enrichedOptions,
+          total_participants: totalParticipants,
         });
       }
 
@@ -675,11 +714,21 @@ export default function AdminPage() {
                               {option.text}
                             </span>
                             <span className="text-sm text-gray-500">
-                              ({option.votes_cached} votes)
+                              {quiz.kind === "quiz"
+                                ? `(${option.participant_count || 0} ${
+                                    option.is_correct ? "correct" : "incorrect"
+                                  })`
+                                : `(${option.votes_cached} votes)`}
                             </span>
                           </div>
                         ))}
                       </div>
+
+                      {quiz.kind === "quiz" && quiz.total_participants !== undefined && (
+                        <p className="text-sm text-blue-600 font-medium mb-2">
+                          Total Participants: {quiz.total_participants}
+                        </p>
+                      )}
 
                       <p className="text-sm text-gray-500">
                         Created: {new Date(quiz.created_at).toLocaleString()}

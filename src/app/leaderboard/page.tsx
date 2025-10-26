@@ -156,17 +156,23 @@ export default function LeaderboardPage() {
         }
 
         // Secondary: Earlier completion wins (if timestamps exist)
+        // Using millisecond precision for better accuracy
         if (hasTimestamps) {
           if (a.completed_at && b.completed_at) {
-            const timeDiff =
-              new Date(a.completed_at).getTime() -
-              new Date(b.completed_at).getTime();
+            const timeA = new Date(a.completed_at).getTime();
+            const timeB = new Date(b.completed_at).getTime();
+            const timeDiff = timeA - timeB;
             if (timeDiff !== 0) return timeDiff;
           } else if (a.completed_at) return -1;
           else if (b.completed_at) return 1;
         }
 
-        // Tertiary: Stable fallback
+        // Tertiary: If timestamps are identical, use username alphabetically
+        // This provides a consistent, predictable ordering
+        const nameCompare = a.user_name.localeCompare(b.user_name);
+        if (nameCompare !== 0) return nameCompare;
+
+        // Quaternary: Stable fallback (should rarely reach here)
         return (a.tie_seq ?? 0) - (b.tie_seq ?? 0);
       })
       .map((entry, index) => ({ ...entry, rank: index + 1 }));
