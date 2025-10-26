@@ -724,11 +724,12 @@ export default function AdminPage() {
                         ))}
                       </div>
 
-                      {quiz.kind === "quiz" && quiz.total_participants !== undefined && (
-                        <p className="text-sm text-blue-600 font-medium mb-2">
-                          Total Participants: {quiz.total_participants}
-                        </p>
-                      )}
+                      {quiz.kind === "quiz" &&
+                        quiz.total_participants !== undefined && (
+                          <p className="text-sm text-blue-600 font-medium mb-2">
+                            Total Participants: {quiz.total_participants}
+                          </p>
+                        )}
 
                       <p className="text-sm text-gray-500">
                         Created: {new Date(quiz.created_at).toLocaleString()}
