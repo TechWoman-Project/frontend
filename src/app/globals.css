@@ -22,7 +22,7 @@ body {
   min-height: 100dvh;
   padding: 20px 16px 60px; /* leave room for sticky footer */
   /* Fallback for browsers that don't support WebP */
-  background: url("/phoneBg.svg?v=2") no-repeat center center fixed;
+  background: url("/phoneBg.webp?v=2") no-repeat center center fixed;
   /* WebP for modern browsers (much smaller file size) */
   background: url("/phoneBg.webp?v=2") no-repeat center center fixed;
   background-size: cover;
@@ -38,7 +38,7 @@ body {
 /* Desktop background for PC/tablets (768px and above) */
 @media (min-width: 768px) {
   .tw-globalContainer {
-    background: url("/fbArtboard1.svg?v=2") no-repeat center center fixed;
+    background: url("/fbArtboard1.webp?v=2") no-repeat center center fixed;
     background: url("/fbArtboard1.webp?v=2") no-repeat center center fixed;
     background-size: cover;
   }
