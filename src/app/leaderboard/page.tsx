@@ -178,11 +178,11 @@ export default function LeaderboardPage() {
 
   // Memoize top winners to avoid recalculation
   const topWinners = useMemo(
-    () => leaderboard.slice(0, TOP_WINNERS_COUNT),
+    () => leaderboard.slice(0, Math.min(TOP_WINNERS_COUNT, leaderboard.length)),
     [leaderboard]
   );
 
-  const hasEnoughParticipants = leaderboard.length >= TOP_WINNERS_COUNT;
+  const hasWinners = leaderboard.length > 0;
 
   // Shared container style
   const containerStyle = {
@@ -237,12 +237,12 @@ export default function LeaderboardPage() {
 
         {/* Top 5 Leaderboard */}
         <div className={`${styles.leaderboardContainer} ${styles.podiumOnly}`}>
-          {!hasEnoughParticipants ? (
+          {!hasWinners ? (
             <div className={styles.emptyState}>
-              <h3>Pas assez de participants</h3>
+              <h3>Aucun participant pour le moment</h3>
               <p>
-                Au moins {TOP_WINNERS_COUNT} participants sont requis pour
-                afficher le classement complet.
+                Soyez le premier à participer au quiz et apparaître dans le
+                classement!
               </p>
               <Link href="/quiz" className={styles.quizButton}>
                 Participer maintenant
@@ -260,17 +260,19 @@ export default function LeaderboardPage() {
                 />
               </div>
 
-              {/* Remaining Winners */}
-              <div className={styles.otherWinnersGrid}>
-                {topWinners.slice(1).map((entry, idx) => (
-                  <WinnerCard
-                    key={entry.user_name}
-                    entry={entry}
-                    rank={idx + 1}
-                    styleClass={styles[`${getPlaceName(idx + 1)}Place`]}
-                  />
-                ))}
-              </div>
+              {/* Remaining Winners (if any) */}
+              {topWinners.length > 1 && (
+                <div className={styles.otherWinnersGrid}>
+                  {topWinners.slice(1).map((entry, idx) => (
+                    <WinnerCard
+                      key={entry.user_name}
+                      entry={entry}
+                      rank={idx + 1}
+                      styleClass={styles[`${getPlaceName(idx + 1)}Place`]}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </div>
