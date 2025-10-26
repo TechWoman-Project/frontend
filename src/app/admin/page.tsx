@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
+import AdminLogin from "@/components/AdminLogin";
 
 interface Quiz {
   id: string;
@@ -26,6 +27,8 @@ interface QuizWithOptions extends Quiz {
 }
 
 export default function AdminPage() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [authLoading, setAuthLoading] = useState(true);
   const [quizzes, setQuizzes] = useState<QuizWithOptions[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -42,13 +45,51 @@ export default function AdminPage() {
     correctOption: 0,
   });
 
+  // Check authentication on mount
   useEffect(() => {
-    fetchQuizzes();
+    checkAuth();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const checkAuth = async () => {
+    try {
+      const response = await fetch("/api/admin-check");
+      if (response.ok) {
+        setIsAuthenticated(true);
+        fetchQuizzes();
+      }
+    } catch (error) {
+      console.error("Auth check failed:", error);
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  const handleLoginSuccess = async () => {
+    setIsAuthenticated(true);
+    setAuthLoading(false);
+    await fetchQuizzes(); // Wait for quizzes to load
+  };
+
+  const handleLogout = async () => {
+    try {
+      await fetch("/api/admin-logout", { method: "POST" });
+      setIsAuthenticated(false);
+      setQuizzes([]);
+    } catch (error) {
+      console.error("Logout failed:", error);
+    }
+  };
+
+  // Remove duplicate - auth check already calls fetchQuizzes
+  // useEffect(() => {
+  //   fetchQuizzes();
+  // }, []);
 
   const fetchQuizzes = async () => {
     try {
       setLoading(true);
+      console.log("Fetching quizzes...");
 
       // Fetch quizzes
       const { data: quizzesData, error: quizzesError } = await supabase
@@ -57,6 +98,8 @@ export default function AdminPage() {
         .order("created_at", { ascending: false });
 
       if (quizzesError) throw quizzesError;
+
+      console.log("Quizzes fetched:", quizzesData?.length || 0);
 
       // Fetch options for each quiz
       const quizzesWithOptions: QuizWithOptions[] = [];
@@ -77,11 +120,13 @@ export default function AdminPage() {
       }
 
       setQuizzes(quizzesWithOptions);
+      console.log("All quizzes with options loaded successfully");
     } catch (error) {
       console.error("Error fetching quizzes:", error);
       alert("Failed to fetch quizzes");
     } finally {
       setLoading(false);
+      console.log("Loading state set to false");
     }
   };
 
@@ -269,6 +314,24 @@ export default function AdminPage() {
     });
   };
 
+  // Show loading state while checking authentication
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Checking authentication...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show login screen if not authenticated
+  if (!isAuthenticated) {
+    return <AdminLogin onLoginSuccess={handleLoginSuccess} />;
+  }
+
+  // Show loading state for quizzes
   if (loading && quizzes.length === 0) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -292,26 +355,36 @@ export default function AdminPage() {
                 Manage quiz questions and opinion polls
               </p>
             </div>
-            <button
-              onClick={() => {
-                setShowCreateForm(!showCreateForm);
-                setEditingQuiz(null);
-                setFormData({
-                  question: "",
-                  status: "draft",
-                  starts_at: "",
-                  ends_at: "",
-                  options: ["", "", "", ""],
-                  correctOption: 0,
-                  kind: "quiz",
-                });
-              }}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors"
-            >
-              {showCreateForm
-                ? "Cancel"
-                : `Create New ${formData.kind === "quiz" ? "Quiz" : "Opinion"}`}
-            </button>
+            <div className="flex gap-3">
+              <button
+                onClick={handleLogout}
+                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
+              >
+                Logout
+              </button>
+              <button
+                onClick={() => {
+                  setShowCreateForm(!showCreateForm);
+                  setEditingQuiz(null);
+                  setFormData({
+                    question: "",
+                    status: "draft",
+                    starts_at: "",
+                    ends_at: "",
+                    options: ["", "", "", ""],
+                    correctOption: 0,
+                    kind: "quiz",
+                  });
+                }}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors"
+              >
+                {showCreateForm
+                  ? "Cancel"
+                  : `Create New ${
+                      formData.kind === "quiz" ? "Quiz" : "Opinion"
+                    }`}
+              </button>
+            </div>
           </div>
         </div>
 
