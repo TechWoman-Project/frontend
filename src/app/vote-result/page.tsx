@@ -2,7 +2,6 @@
 import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { supabase } from "@/lib/supabase";
 import styles from "../quiz/quiz.module.css";
-import Logo from "@/components/Logo";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import RealtimeStatus from "@/components/RealtimeStatus";

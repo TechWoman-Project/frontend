@@ -1,6 +1,5 @@
 "use client";
 import Link from "next/link";
-import Logo from "@/components/Logo";
 import Header from "@/components/Header";
 import quizStyles from "@/app/quiz/quiz.module.css";
 import Footer from "@/components/Footer";
