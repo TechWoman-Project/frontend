@@ -264,7 +264,7 @@ export default function VoteResultPage() {
         .select("id, question, status, kind")
         .eq("id", quizId)
         .single();
-      
+
       // If quiz doesn't exist, has error, or wrong kind - remove it
       if (qErr || !quizRow || quizRow.kind !== "opinion") {
         setResults((prev) => prev.filter((q) => q.quizId !== quizId));
