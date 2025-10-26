@@ -150,6 +150,38 @@ export default function AdminPage() {
             });
           }
         }
+        // For opinion polls, count actual votes from votes table
+        else if (quiz.kind === "opinion") {
+          // Fetch actual vote counts from votes table for each option
+          const optionIds = enrichedOptions.map((opt) => opt.id);
+          if (optionIds.length > 0) {
+            const { data: votesData, error: votesError } = await supabase
+              .from("votes")
+              .select("option_id, quiz_id")
+              .eq("quiz_id", quiz.id)
+              .in("option_id", optionIds);
+
+            if (votesError) {
+              console.error("Error fetching votes:", votesError);
+            } else if (votesData) {
+              // Count votes for each option
+              const voteCounts: Record<string, number> = {};
+              votesData.forEach((vote) => {
+                voteCounts[vote.option_id] =
+                  (voteCounts[vote.option_id] || 0) + 1;
+              });
+
+              // Update each option with actual vote count
+              enrichedOptions = enrichedOptions.map((option) => ({
+                ...option,
+                participant_count: voteCounts[option.id] || 0,
+              }));
+
+              // Total votes for this opinion poll
+              totalParticipants = votesData.length;
+            }
+          }
+        }
 
         quizzesWithOptions.push({
           ...quiz,
@@ -718,16 +750,18 @@ export default function AdminPage() {
                                 ? `(${option.participant_count || 0} ${
                                     option.is_correct ? "correct" : "incorrect"
                                   })`
-                                : `(${option.votes_cached} votes)`}
+                                : `(${option.participant_count || 0} votes)`}
                             </span>
                           </div>
                         ))}
                       </div>
 
-                      {quiz.kind === "quiz" &&
-                        quiz.total_participants !== undefined && (
+                      {quiz.total_participants !== undefined &&
+                        quiz.total_participants > 0 && (
                           <p className="text-sm text-blue-600 font-medium mb-2">
-                            Total Participants: {quiz.total_participants}
+                            Total{" "}
+                            {quiz.kind === "quiz" ? "Participants" : "Votes"}:{" "}
+                            {quiz.total_participants}
                           </p>
                         )}
 
