@@ -458,7 +458,13 @@ export default function VoteResultPage() {
         )}
         {results.map((r) => (
           <div key={r.quizId} style={{ width: "100%", marginBottom: "2rem" }}>
-            <h2 style={{ fontSize: "2.5rem", textAlign: "center", marginBottom: "0.5rem" }}>
+            <h2
+              style={{
+                fontSize: "2.5rem",
+                textAlign: "center",
+                marginBottom: "0.5rem",
+              }}
+            >
               {r.opinion}
             </h2>
             <VoteChart options={r.options} totalVotes={r.totalVotes} />
