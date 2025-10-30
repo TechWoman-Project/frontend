@@ -9,11 +9,13 @@ import Header from "./Header";
 import ScheduleModal from "./ScheduleModal";
 import logoSponsor1 from "@/../public/assets/sponsorLogo1.png";
 import logoSponsor2 from "@/../public/assets/sponsorLogo2.png";
+import { supabase } from "@/lib/supabase";
 
 export default function HomeLanding() {
   const trackRef = useRef<HTMLDivElement | null>(null);
   const [index, setIndex] = useState(0);
   const [isScheduleOpen, setIsScheduleOpen] = useState(false);
+  const [hasActiveQuiz, setHasActiveQuiz] = useState(false);
   const slides = [member1, member2];
 
   const indexRef = useRef(index);
@@ -31,6 +33,27 @@ export default function HomeLanding() {
     }, 4000);
     return () => clearInterval(interval);
   }, [slides.length]);
+
+  useEffect(() => {
+    const checkQuizAvailability = async () => {
+      const { data, error } = await supabase
+        .from("quizzes")
+        .select("id")
+        .eq("status", "active")
+        .eq("kind", "quiz")
+        .limit(1);
+
+      if (error) {
+        console.error("Unable to fetch active quizzes", error);
+        setHasActiveQuiz(false);
+        return;
+      }
+
+      setHasActiveQuiz((data?.length ?? 0) > 0);
+    };
+
+    checkQuizAvailability();
+  }, []);
 
   return (
     <div className="tw-globalContainer">
@@ -138,12 +161,14 @@ export default function HomeLanding() {
       </section>
 
       <div className="tw-buttons-dual">
-        <Link href="/start-quiz" className="tw-btn-primary" role="button">
-          Participer au Quiz
-        </Link>
-        <Link href="/vote" className="tw-btn-secondary" role="button">
+        {hasActiveQuiz && (
+          <Link href="/start-quiz" className="tw-btn-primary" role="button">
+            Participer au Quiz
+          </Link>
+        )}
+        {/* <Link href="/vote" className="tw-btn-secondary" role="button">
           Voter
-        </Link>
+        </Link> */}
       </div>
 
       <section className="tw-section">
