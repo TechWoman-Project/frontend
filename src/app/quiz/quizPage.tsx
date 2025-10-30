@@ -1,7 +1,7 @@
 "use client";
+/* eslint-disable @next/next/no-img-element */
 import { useEffect, useState, useCallback, useRef } from "react";
 import styles from "./quiz.module.css";
-import Logo from "@/components/Logo";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { supabase } from "@/lib/supabase";
@@ -460,12 +460,7 @@ export default function QuizPage() {
               </span>
             </div>
              */}
-            <div
-              className={styles.questionContainer}
-              style={{
-               
-              }}
-            >
+            <div className={styles.questionContainer} style={{}}>
               {currentQuestion.question}
             </div>
             <div className={styles.answers}>
@@ -475,15 +470,12 @@ export default function QuizPage() {
                   locked && idx === currentQuestion.correctIndex;
                 const isWrong =
                   locked && isSelected && idx !== currentQuestion.correctIndex;
+                const classNames = [styles.answerBox];
+                if (isSelected) classNames.push(styles.active);
                 return (
                   <div
                     key={idx}
-                    className={[
-                      styles.answerBox,
-                      isSelected ? styles.active : "",
-                      isCorrect ? styles.correct : "",
-                      isWrong ? styles.wrong : "",
-                    ].join(" ")}
+                    className={classNames.join(" ")}
                     onClick={() => handleSelect(idx)}
                     role="button"
                     tabIndex={0}
