@@ -35,6 +35,7 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [editingQuiz, setEditingQuiz] = useState<QuizWithOptions | null>(null);
+  const [bulkUpdating, setBulkUpdating] = useState(false);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -80,6 +81,34 @@ export default function AdminPage() {
       setQuizzes([]);
     } catch (error) {
       console.error("Logout failed:", error);
+    }
+  };
+
+  const updateAllQuizStatuses = async (
+    nextStatus: "draft" | "active" | "closed"
+  ) => {
+    const pretty = nextStatus.charAt(0).toUpperCase() + nextStatus.slice(1);
+    const confirmed = window.confirm(
+      `Apply status "${pretty}" to all quiz questions?`
+    );
+    if (!confirmed) return;
+
+    try {
+      setBulkUpdating(true);
+      const { error } = await supabase
+        .from("quizzes")
+        .update({ status: nextStatus, updated_at: new Date().toISOString() })
+        .eq("kind", "quiz");
+
+      if (error) throw error;
+
+      await fetchQuizzes();
+      alert(`All quiz questions set to "${pretty}".`);
+    } catch (error) {
+      console.error("Failed to update quiz statuses:", error);
+      alert("Bulk status update failed. Please try again.");
+    } finally {
+      setBulkUpdating(false);
     }
   };
 
@@ -731,10 +760,42 @@ export default function AdminPage() {
 
         {/* Quizzes List */}
         <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-200">
-            <h2 className="text-xl font-semibold text-gray-900">
-              All Items ({quizzes.length})
-            </h2>
+          <div className="px-6 py-4 border-b border-gray-200 space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <h2 className="text-xl font-semibold text-gray-900">
+                All Items ({quizzes.length})
+              </h2>
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <span className="font-medium">Set all quizzes to:</span>
+                {["draft", "active", "closed"].map((status) => (
+                  <button
+                    key={status}
+                    onClick={() =>
+                      updateAllQuizStatuses(
+                        status as "draft" | "active" | "closed"
+                      )
+                    }
+                    disabled={loading || bulkUpdating}
+                    className={`px-3 py-1 rounded border text-xs font-semibold transition-colors ${
+                      status === "active"
+                        ? "border-green-500 text-green-600 hover:bg-green-50"
+                        : status === "closed"
+                        ? "border-red-500 text-red-600 hover:bg-red-50"
+                        : "border-gray-400 text-gray-600 hover:bg-gray-50"
+                    } ${
+                      loading || bulkUpdating
+                        ? "opacity-50 cursor-not-allowed"
+                        : ""
+                    }`}
+                  >
+                    {status.charAt(0).toUpperCase() + status.slice(1)}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {bulkUpdating && (
+              <p className="text-sm text-indigo-600">Applying bulk status…</p>
+            )}
           </div>
 
           {quizzes.length === 0 ? (
