@@ -158,11 +158,11 @@ export default function AdminPage() {
           : Promise.resolve({ data: [], error: null });
 
       const votesPromise =
-        quizIdsOpinion.length > 0
+        quizIds.length > 0
           ? supabase
               .from("votes")
-              .select("quiz_id, option_id")
-              .in("quiz_id", quizIdsOpinion)
+              .select("quiz_id, option_id, user_name")
+              .in("quiz_id", quizIds)
           : Promise.resolve({ data: [], error: null });
 
       const [
@@ -183,6 +183,7 @@ export default function AdminPage() {
       type VoteRow = {
         quiz_id: string;
         option_id: string;
+        user_name: string;
       };
 
       const optionsByQuiz = new Map<string, Option[]>();
@@ -224,15 +225,17 @@ export default function AdminPage() {
 
       const voteStats = new Map<
         string,
-        { totalVotes: number; perOption: Record<string, number> }
+        { totalVotes: number; perOption: Record<string, number>; users: Set<string> }
       >();
 
       (votesData as VoteRow[] | null)?.forEach((vote) => {
         const existing = voteStats.get(vote.quiz_id) || {
           totalVotes: 0,
           perOption: {} as Record<string, number>,
+          users: new Set<string>(),
         };
-        existing.totalVotes += 1;
+        existing.users.add(vote.user_name);
+        existing.totalVotes = existing.users.size;
         existing.perOption[vote.option_id] =
           (existing.perOption[vote.option_id] || 0) + 1;
         voteStats.set(vote.quiz_id, existing);
@@ -244,16 +247,11 @@ export default function AdminPage() {
         let optionsWithCounts = baseOptions;
 
         if (quiz.kind === "quiz") {
-          const stats = scoreStats.get(quiz.id);
-          const correctCount = stats?.correctCount ?? 0;
-          const incorrectCount = stats?.incorrectCount ?? 0;
-          totalParticipants = stats?.totalParticipants ?? 0;
-
+          const stats = voteStats.get(quiz.id);
+          totalParticipants = stats?.totalVotes ?? 0;
           optionsWithCounts = baseOptions.map((option) => ({
             ...option,
-            participant_count: option.is_correct
-              ? correctCount
-              : incorrectCount,
+            participant_count: stats?.perOption[option.id] ?? 0,
           }));
         } else {
           const stats = voteStats.get(quiz.id);

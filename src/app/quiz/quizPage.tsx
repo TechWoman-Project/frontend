@@ -11,6 +11,7 @@ interface QuizQuestion {
   quizId: string; // real Supabase quiz UUID
   question: string;
   options: string[]; // answers list
+  optionIds: string[]; // option IDs cached from fetch to avoid re-querying
   correctIndex: number; // 0-based index of correct answer
   points: number; // points for right answer
   time?: number; // optional per-question time
@@ -59,7 +60,7 @@ export default function QuizPage() {
             const quiz = quizzes[i];
             const { data: opts, error: oErr } = await supabase
               .from("options")
-              .select("text,is_correct,order_index")
+              .select("id,text,is_correct,order_index")
               .eq("quiz_id", quiz.id)
               .order("order_index", { ascending: true });
             if (oErr) throw oErr;
@@ -73,6 +74,7 @@ export default function QuizPage() {
               quizId: quiz.id,
               question: quiz.question,
               options: opts.map((o) => o.text),
+              optionIds: opts.map((o) => o.id),
               correctIndex: correctIndex >= 0 ? correctIndex : 0,
               points: POINTS_PER_QUESTION,
               time: ANSWER_TIME,
@@ -296,54 +298,36 @@ export default function QuizPage() {
   const progressPercent = (questionTimeLeft / perQuestionTime) * 100;
 
   // Insert vote into database
-  const insertVote = async (
-    quizId: string,
-    optionId: string,
-    userName: string
-  ) => {
-    try {
-      const { error } = await supabase.from("votes").insert({
-        quiz_id: quizId,
-        option_id: optionId,
-        user_name: userName,
-      });
-
-      if (error && error.code !== "23505") {
-        // Ignore duplicate vote constraint
-        console.error("Error inserting vote:", error);
-      }
-    } catch (err) {
-      console.error("Failed to insert vote:", err);
-    }
+  const insertVote = (quizId: string, optionId: string, userName: string) => {
+    // Fire-and-forget the request to the API route.
+    // No need to await, the server will handle it.
+    fetch("/api/submit-vote", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ quizId, optionId, userName }),
+    }).catch((error) => {
+      // We can log the error, but we don't block the user.
+      console.error("Failed to submit vote:", error);
+    });
   };
 
-  const handleSelect = async (idx: number) => {
+  const handleSelect = (idx: number) => {
     if (locked || !currentQuestion || !userName) return;
 
     setSelectedIndex(idx);
     setLocked(true);
 
-    // Get the actual option ID from database for vote insertion
-    try {
-      const { data: options, error } = await supabase
-        .from("options")
-        .select("id, is_correct")
-        .eq("quiz_id", currentQuestion.quizId)
-        .order("order_index");
+    const optionId = currentQuestion.optionIds[idx];
+    if (optionId) {
+      // Call the fire-and-forget function
+      insertVote(currentQuestion.quizId, optionId, userName);
+    }
 
-      if (error) throw error;
-
-      if (options?.[idx]) {
-        // Insert vote into database (for tracking individual answers)
-        await insertVote(currentQuestion.quizId, options[idx].id, userName);
-
-        // Update local score if correct (will be saved at end)
-        if (idx === currentQuestion.correctIndex) {
-          setScore((prev) => prev + POINTS_PER_QUESTION);
-        }
-      }
-    } catch (err) {
-      console.error("Error handling vote:", err);
+    // Update local score if correct
+    if (idx === currentQuestion.correctIndex) {
+      setScore((prev) => prev + POINTS_PER_QUESTION);
     }
 
     // Short delay before moving to next question or showing results
