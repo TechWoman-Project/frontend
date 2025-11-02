@@ -225,7 +225,11 @@ export default function AdminPage() {
 
       const voteStats = new Map<
         string,
-        { totalVotes: number; perOption: Record<string, number>; users: Set<string> }
+        {
+          totalVotes: number;
+          perOption: Record<string, number>;
+          users: Set<string>;
+        }
       >();
 
       (votesData as VoteRow[] | null)?.forEach((vote) => {
